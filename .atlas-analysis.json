@@ -1,0 +1,167 @@
+{
+  "projectType": "saas",
+  "projectName": "Better Auth Studio",
+  "projectDescription": "A comprehensive admin dashboard and studio for managing Better Auth applications with user, organization, and session management.",
+  "theme": "aspen",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#2563EB",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/user-management",
+              "features/organization-management",
+              "features/session-management",
+              "features/event-tracking",
+              "features/developer-tools"
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "self-hosting/overview",
+              "self-hosting/nextjs",
+              "self-hosting/express",
+              "self-hosting/other-frameworks",
+              "self-hosting/configuration"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/database-adapters",
+              "configuration/access-control",
+              "configuration/ip-geolocation",
+              "configuration/event-ingestion",
+              "configuration/metadata"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/cli-usage",
+              "guides/watch-mode",
+              "guides/bulk-operations",
+              "guides/custom-branding",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "CLI Commands",
+            "pages": [
+              "api/cli/start",
+              "api/cli/init"
+            ]
+          },
+          {
+            "group": "Framework Adapters",
+            "pages": [
+              "api/adapters/nextjs",
+              "api/adapters/express",
+              "api/adapters/hono",
+              "api/adapters/svelte-kit",
+              "api/adapters/remix",
+              "api/adapters/nuxt",
+              "api/adapters/solid-start",
+              "api/adapters/tanstack-start",
+              "api/adapters/astro",
+              "api/adapters/elysia"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/config/studio-config",
+              "api/config/access-config",
+              "api/config/metadata-config",
+              "api/config/events-config"
+            ]
+          },
+          {
+            "group": "Event Ingestion",
+            "pages": [
+              "api/events/providers",
+              "api/events/helpers",
+              "api/events/types"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/utilities/hook-injector",
+              "api/utilities/event-ingestion"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "User Management (view, create, edit, delete users with pagination and search)",
+    "Organization & Team Management (manage organizations, teams, and members)",
+    "Session Management (view active sessions with IP geolocation support)",
+    "Event Tracking & Analytics (real-time event ingestion and monitoring)",
+    "Multi-Database Support (Prisma, Drizzle, SQLite, PostgreSQL, MySQL)",
+    "Multi-Framework Adapters (Next.js, Express, Hono, SvelteKit, Remix, Nuxt, and more)",
+    "CLI Tool (start studio with customizable options and watch mode)",
+    "Self-Hosting (deploy alongside your application with access control)",
+    "Developer Tools (OAuth testing, password hashing, JWT decoder, token generator)",
+    "Real-time Updates (WebSocket support for live config changes)",
+    "Bulk Operations (seed test users, organizations, and teams)",
+    "Last Seen Tracking (automatic user activity tracking)"
+  ],
+  "publicApiSurface": [
+    "better-auth-studio start (CLI command to start the studio)",
+    "better-auth-studio init (CLI command to initialize self-hosting configuration)",
+    "betterAuthStudio() (Next.js adapter)",
+    "betterAuthStudio() (Express adapter)",
+    "betterAuthStudio() (Hono adapter)",
+    "betterAuthStudio() (Elysia adapter)",
+    "betterAuthStudio() (SvelteKit adapter)",
+    "betterAuthStudio() (Solid Start adapter)",
+    "betterAuthStudio() (TanStack Start adapter)",
+    "betterAuthStudio() (Astro adapter)",
+    "betterAuthStudio() (Remix adapter)",
+    "betterAuthStudio() (Nuxt adapter)",
+    "defineStudioConfig() (configuration helper)",
+    "StudioConfig (TypeScript type)",
+    "StudioMetadata (TypeScript type)",
+    "StudioAccessConfig (TypeScript type)",
+    "StudioLastSeenAtConfig (TypeScript type)",
+    "StudioIpAddressConfig (TypeScript type)",
+    "injectLastSeenAtHooks() (utility function)",
+    "injectEventHooks() (utility function)",
+    "createPostgresProvider() (event provider helper)",
+    "createSqliteProvider() (event provider helper)",
+    "createNodeSqliteProvider() (event provider helper)",
+    "createClickHouseProvider() (event provider helper)",
+    "createHttpProvider() (event provider helper)",
+    "createStorageProvider() (event provider helper)",
+    "initializeEventIngestion() (event ingestion utility)",
+    "emitEvent() (event ingestion utility)",
+    "getEventIngestionProvider() (event ingestion utility)",
+    "checkEventIngestionHealth() (event ingestion utility)",
+    "shutdownEventIngestion() (event ingestion utility)",
+    "AuthEvent (TypeScript type)",
+    "EventIngestionProvider (TypeScript type)",
+    "STUDIO_TOOL_IDS (constant array of tool IDs)"
+  ]
+}
