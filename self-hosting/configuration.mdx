@@ -1,0 +1,677 @@
+---
+title: Configuration
+description: Complete guide to configuring Better Auth Studio for self-hosting
+---
+
+Learn about all available configuration options for self-hosting Better Auth Studio.
+
+## StudioConfig Type
+
+The `StudioConfig` type defines all configuration options for Better Auth Studio:
+
+```typescript
+import type { StudioConfig } from "better-auth-studio";
+
+const config: StudioConfig = {
+  auth,           // Required: Your Better Auth instance
+  basePath,       // Required: URL path where studio is mounted
+  access,         // Optional: Access control
+  metadata,       // Optional: Branding and UI customization
+  lastSeenAt,     // Optional: Last-seen tracking
+  ipAddress,      // Optional: IP geolocation
+  events,         // Optional: Event tracking
+  tools,          // Optional: Tools configuration
+};
+```
+
+## Required Options
+
+### auth
+
+**Type:** `BetterAuth`
+
+Your Better Auth instance. This is required for the studio to access your authentication data.
+
+```typescript
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+};
+```
+
+### basePath
+
+**Type:** `string`
+
+The URL path where the studio is mounted. Must match the route where you mount the handler.
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio", // Access at http://localhost:3000/api/studio
+};
+```
+
+<Note>
+  The `basePath` must match your framework's route path. For example, if using Next.js with `app/api/studio/[[...path]]/route.ts`, set `basePath: "/api/studio"`.
+</Note>
+
+## Access Control
+
+### access
+
+**Type:** `StudioAccessConfig`
+
+Control who can access the studio interface.
+
+```typescript
+type StudioAccessConfig = {
+  roles?: string[];          // Array of allowed user roles
+  allowEmails?: string[];    // Array of allowed email addresses
+  sessionDuration?: number;  // Session duration in seconds
+  secret?: string;           // Secret for session encryption
+};
+```
+
+#### access.roles
+
+Restrict access to users with specific roles:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin", "super-admin"],
+  },
+};
+```
+
+#### access.allowEmails
+
+Restrict access to specific email addresses:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    allowEmails: [
+      "admin@company.com",
+      "support@company.com",
+      "dev@company.com",
+    ],
+  },
+};
+```
+
+#### Combining Roles and Emails
+
+You can combine both for flexible access control:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+    allowEmails: ["special-user@company.com"], // This user gets access even without admin role
+  },
+};
+```
+
+## Metadata & Branding
+
+### metadata
+
+**Type:** `StudioMetadata`
+
+Customize the studio's appearance and branding.
+
+```typescript
+type StudioMetadata = {
+  title?: string;
+  logo?: string;
+  favicon?: string;
+  company?: {
+    name?: string;
+    website?: string;
+    supportEmail?: string;
+  };
+  theme?: "dark" | "light" | "auto";
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  features?: {
+    users?: boolean;
+    sessions?: boolean;
+    organizations?: boolean;
+    analytics?: boolean;
+    tools?: boolean;
+    security?: boolean;
+  };
+  links?: Array<{ label: string; url: string }>;
+  custom?: Record<string, any>;
+};
+```
+
+#### Basic Branding
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Acme Admin Dashboard",
+    theme: "dark",
+  },
+};
+```
+
+#### Full Branding
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Acme Admin Dashboard",
+    logo: "/logo.png",
+    favicon: "/favicon.ico",
+    company: {
+      name: "Acme Inc.",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    theme: "dark",
+    colors: {
+      primary: "#6366f1",
+      secondary: "#8b5cf6",
+      accent: "#ec4899",
+    },
+    links: [
+      { label: "Documentation", url: "https://docs.acme.com" },
+      { label: "Support", url: "https://support.acme.com" },
+    ],
+  },
+};
+```
+
+#### Feature Toggles
+
+Control which sections are visible:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    features: {
+      users: true,
+      sessions: true,
+      organizations: true,
+      analytics: true,
+      tools: false,      // Hide tools section
+      security: false,   // Hide security section
+    },
+  },
+};
+```
+
+## Last-Seen Tracking
+
+### lastSeenAt
+
+**Type:** `StudioLastSeenAtConfig`
+
+Enable automatic last-seen tracking for users.
+
+```typescript
+type StudioLastSeenAtConfig = {
+  enabled?: boolean;
+  columnName?: string;  // Default: "lastSeenAt"
+};
+```
+
+<Warning>
+  When enabling `lastSeenAt`, you must add the column to your user table and run migrations.
+</Warning>
+
+#### Basic Setup
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  lastSeenAt: {
+    enabled: true,
+  },
+};
+```
+
+Then run your database migration:
+
+<CodeGroup>
+
+```bash Prisma
+prisma migrate dev
+```
+
+```bash Drizzle
+drizzle-kit push
+```
+
+</CodeGroup>
+
+#### Custom Column Name
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  lastSeenAt: {
+    enabled: true,
+    columnName: "last_seen_at", // Use snake_case column name
+  },
+};
+```
+
+<Note>
+  The studio injects hooks into Better Auth that automatically update the last-seen timestamp on sign-in and session creation.
+</Note>
+
+## IP Geolocation
+
+### ipAddress
+
+**Type:** `StudioIpAddressConfig`
+
+Configure IP geolocation for Events and Sessions.
+
+```typescript
+type StudioIpAddressConfig =
+  | {
+      provider: "ipinfo";
+      apiToken?: string;
+      baseUrl?: string;
+      endpoint?: "lite" | "lookup";  // Default: "lookup"
+    }
+  | {
+      provider: "ipapi";
+      apiToken?: string;
+      baseUrl?: string;
+    }
+  | {
+      provider: "static";
+      path: string;  // Path to .mmdb file
+    };
+```
+
+#### Using IPInfo
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lookup", // "lite" for free tier (country only), "lookup" for paid (city/region)
+  },
+};
+```
+
+#### Using IPApi
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipapi",
+    apiToken: process.env.IPAPI_TOKEN,
+  },
+};
+```
+
+#### Using MaxMind GeoLite2 (Static)
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "static",
+    path: "./data/GeoLite2-City.mmdb",
+  },
+};
+```
+
+## Event Tracking
+
+### events
+
+**Type:** `EventsConfig`
+
+Configure authentication event tracking and analytics.
+
+```typescript
+type EventsConfig = {
+  enabled?: boolean;
+  tableName?: string;
+  provider?: EventIngestionProvider;
+  client?: any;
+  clientType?: "postgres" | "prisma" | "drizzle" | "clickhouse" | "sqlite" | "node-sqlite" | "https" | "custom";
+  include?: AuthEventType[];
+  exclude?: AuthEventType[];
+  batchSize?: number;
+  flushInterval?: number;
+  retryOnError?: boolean;
+  liveMarquee?: LiveMarqueeConfig;
+  onEventIngest?: (event: AuthEvent) => void | Promise<void>;
+};
+```
+
+#### Basic Event Tracking
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+  },
+};
+```
+
+#### Filter Events
+
+Track only specific event types:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    include: ["sign-in", "sign-up", "sign-out", "password-reset"],
+  },
+};
+```
+
+Or exclude specific events:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    exclude: ["token-refresh", "session-check"],
+  },
+};
+```
+
+#### Live Marquee
+
+Configure the live events marquee:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    liveMarquee: {
+      enabled: true,
+      pollInterval: 2000,        // Poll every 2 seconds
+      speed: 0.5,                // Animation speed
+      pauseOnHover: true,        // Pause when hovered
+      limit: 50,                 // Show max 50 events
+      sort: "desc",              // Newest first
+      timeWindow: {
+        since: "1h",             // Show events from last hour
+      },
+      colors: {
+        success: "#10b981",
+        info: "#3b82f6",
+        warning: "#f59e0b",
+        error: "#ef4444",
+        failed: "#dc2626",
+      },
+    },
+  },
+};
+```
+
+#### Custom Time Window
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    liveMarquee: {
+      enabled: true,
+      timeWindow: {
+        custom: 2 * 60 * 60, // Custom 2 hours in seconds
+      },
+    },
+  },
+};
+```
+
+#### Event Callback
+
+Run custom logic when events are ingested:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    onEventIngest: async (event) => {
+      // Log to external service
+      await logToAnalytics(event);
+      
+      // Send alerts for failed logins
+      if (event.type === "sign-in" && event.status === "failed") {
+        await sendAlert(event);
+      }
+    },
+  },
+};
+```
+
+## Tools Configuration
+
+### tools
+
+**Type:** `ToolsConfig`
+
+Control which tools are shown in the studio interface.
+
+```typescript
+type ToolsConfig = {
+  exclude?: StudioToolId[];
+};
+
+type StudioToolId =
+  | "test-oauth"
+  | "hash-password"
+  | "run-migration"
+  | "test-db"
+  | "validate-config"
+  | "health-check"
+  | "export-data"
+  | "jwt-decoder"
+  | "token-generator"
+  | "plugin-generator"
+  | "uuid-generator"
+  | "password-strength"
+  | "oauth-credentials"
+  | "secret-generator";
+```
+
+#### Hide Tools in Production
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  tools: {
+    exclude: [
+      "test-oauth",
+      "test-db",
+      "run-migration",
+      "health-check",
+    ],
+  },
+};
+```
+
+#### Environment-Based Configuration
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  tools: {
+    exclude: process.env.NODE_ENV === "production"
+      ? ["test-oauth", "run-migration", "test-db"]
+      : [],
+  },
+};
+```
+
+## Complete Example
+
+Here's a comprehensive configuration example:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  
+  // Access control
+  access: {
+    roles: ["admin", "super-admin"],
+    allowEmails: ["admin@company.com"],
+  },
+  
+  // Branding
+  metadata: {
+    title: "Acme Admin Dashboard",
+    logo: "/logo.png",
+    theme: "dark",
+    company: {
+      name: "Acme Inc.",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    colors: {
+      primary: "#6366f1",
+      secondary: "#8b5cf6",
+      accent: "#ec4899",
+    },
+  },
+  
+  // Last-seen tracking
+  lastSeenAt: {
+    enabled: true,
+  },
+  
+  // IP geolocation
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lookup",
+  },
+  
+  // Event tracking
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    include: ["sign-in", "sign-up", "sign-out", "password-reset"],
+    liveMarquee: {
+      enabled: true,
+      pollInterval: 2000,
+      speed: 0.5,
+      pauseOnHover: true,
+      timeWindow: { since: "1h" },
+    },
+    onEventIngest: async (event) => {
+      if (event.type === "sign-in" && event.status === "failed") {
+        await sendAlert(event);
+      }
+    },
+  },
+  
+  // Hide sensitive tools in production
+  tools: {
+    exclude: process.env.NODE_ENV === "production"
+      ? ["test-oauth", "run-migration", "test-db"]
+      : [],
+  },
+};
+
+export default config;
+```
+
+## Environment Variables
+
+Recommended environment variables for production:
+
+```bash .env
+# Database
+DATABASE_URL=postgresql://user:pass@host:5432/db
+
+# IP Geolocation
+IPINFO_TOKEN=your_ipinfo_token
+IPAPI_TOKEN=your_ipapi_token
+
+# Better Auth
+BETTER_AUTH_SECRET=your_secret_key
+
+# Studio
+STUDIO_ACCESS_SECRET=your_studio_secret
+```
+
+Use in your config:
+
+```typescript
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    secret: process.env.STUDIO_ACCESS_SECRET,
+  },
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+  },
+};
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Next.js Setup" icon="react" href="/self-hosting/nextjs">
+    Set up with Next.js App Router
+  </Card>
+  <Card title="Express Setup" icon="server" href="/self-hosting/express">
+    Integrate with Express.js
+  </Card>
+</CardGroup>

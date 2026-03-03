@@ -1,0 +1,332 @@
+---
+title: Event Types
+description: TypeScript types and interfaces for event ingestion
+---
+
+## AuthEvent
+
+Represents a single authentication event.
+
+```typescript
+interface AuthEvent {
+  id: string;
+  type: AuthEventType;
+  timestamp: Date;
+  status: "success" | "failed";
+  userId?: string;
+  sessionId?: string;
+  organizationId?: string;
+  metadata?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  source: "app" | "api";
+  display?: {
+    message: string;
+    severity?: "info" | "success" | "warning" | "failed";
+  };
+}
+```
+
+### Fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the event (UUID)
+</ResponseField>
+
+<ResponseField name="type" type="AuthEventType" required>
+  The type of authentication event (e.g., `"user.joined"`, `"user.logged_in"`)
+</ResponseField>
+
+<ResponseField name="timestamp" type="Date" required>
+  When the event occurred
+</ResponseField>
+
+<ResponseField name="status" type="'success' | 'failed'" required>
+  Whether the event completed successfully or failed
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the user associated with this event
+</ResponseField>
+
+<ResponseField name="sessionId" type="string">
+  ID of the session associated with this event
+</ResponseField>
+
+<ResponseField name="organizationId" type="string">
+  ID of the organization associated with this event
+</ResponseField>
+
+<ResponseField name="metadata" type="Record<string, any>">
+  Additional event-specific data (e.g., user name, email, changed fields)
+</ResponseField>
+
+<ResponseField name="ipAddress" type="string">
+  IP address where the event originated
+</ResponseField>
+
+<ResponseField name="userAgent" type="string">
+  User agent string from the client
+</ResponseField>
+
+<ResponseField name="source" type="'app' | 'api'" required>
+  Source of the event - either from your app or API
+</ResponseField>
+
+<ResponseField name="display" type="object">
+  Display information for rendering in UI
+  
+  <ResponseField name="display.message" type="string">
+    Human-readable message describing the event
+  </ResponseField>
+  
+  <ResponseField name="display.severity" type="'info' | 'success' | 'warning' | 'failed'">
+    Severity level for UI styling
+  </ResponseField>
+</ResponseField>
+
+## AuthEventType
+
+String union type of all possible authentication event types.
+
+```typescript
+type AuthEventType =
+  // User events
+  | "user.joined"
+  | "user.logged_in"
+  | "user.updated"
+  | "user.logged_out"
+  | "user.password_changed"
+  | "user.email_verified"
+  | "user.banned"
+  | "user.unbanned"
+  | "user.deleted"
+  | "user.delete_verification_requested"
+  // Organization events
+  | "organization.created"
+  | "organization.deleted"
+  | "organization.updated"
+  // Member events
+  | "member.added"
+  | "member.removed"
+  | "member.role_changed"
+  // Session events
+  | "session.created"
+  // Auth events
+  | "login.failed"
+  // Password events
+  | "password.reset_requested"
+  | "password.reset_completed"
+  | "password.reset_requested_otp"
+  | "password.reset_completed_otp"
+  // OAuth events
+  | "oauth.linked"
+  | "oauth.unlinked"
+  | "oauth.sign_in"
+  // Team events
+  | "team.created"
+  | "team.updated"
+  | "team.deleted"
+  | "team.member.added"
+  | "team.member.removed"
+  // Invitation events
+  | "invitation.created"
+  | "invitation.accepted"
+  | "invitation.rejected"
+  | "invitation.cancelled"
+  // Phone number events
+  | "phone_number.otp_requested"
+  | "phone_number.verification";
+```
+
+## EventQueryOptions
+
+Options for querying events.
+
+```typescript
+interface EventQueryOptions {
+  limit?: number;
+  offset?: number;
+  after?: string;
+  sort?: "asc" | "desc";
+  type?: string;
+  userId?: string;
+  since?: Date;
+}
+```
+
+### Fields
+
+<ParamField path="limit" type="number" default={20}>
+  Maximum number of events to return
+</ParamField>
+
+<ParamField path="offset" type="number">
+  Offset for pagination (fetch from N). When provided, cursor-based pagination is disabled.
+</ParamField>
+
+<ParamField path="after" type="string">
+  Cursor for pagination (used when offset not provided). Returns events after this event ID.
+</ParamField>
+
+<ParamField path="sort" type="'asc' | 'desc'" default="desc">
+  Sort order:
+  - `"desc"`: Newest first (default)
+  - `"asc"`: Oldest first
+</ParamField>
+
+<ParamField path="type" type="string">
+  Filter by event type (e.g., `"user.logged_in"`)
+</ParamField>
+
+<ParamField path="userId" type="string">
+  Filter events for a specific user
+</ParamField>
+
+<ParamField path="since" type="Date">
+  Filter events since this timestamp
+</ParamField>
+
+## EventQueryResult
+
+Result from querying events.
+
+```typescript
+interface EventQueryResult {
+  events: AuthEvent[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+```
+
+### Fields
+
+<ResponseField name="events" type="AuthEvent[]" required>
+  Array of events matching the query
+</ResponseField>
+
+<ResponseField name="hasMore" type="boolean" required>
+  Whether there are more events available for pagination
+</ResponseField>
+
+<ResponseField name="nextCursor" type="string | null" required>
+  Cursor to use for fetching the next page. `null` if no more events.
+</ResponseField>
+
+## EventStats
+
+Statistical breakdown of events by severity.
+
+```typescript
+interface EventStats {
+  total: number;
+  success: number;
+  failed: number;
+  warning: number;
+  info: number;
+}
+```
+
+### Fields
+
+<ResponseField name="total" type="number" required>
+  Total number of events
+</ResponseField>
+
+<ResponseField name="success" type="number" required>
+  Number of events with success severity
+</ResponseField>
+
+<ResponseField name="failed" type="number" required>
+  Number of events with failed severity
+</ResponseField>
+
+<ResponseField name="warning" type="number" required>
+  Number of events with warning severity
+</ResponseField>
+
+<ResponseField name="info" type="number" required>
+  Number of events with info severity
+</ResponseField>
+
+## EVENT_TEMPLATES
+
+Mapping of event types to message template functions. Used to generate human-readable messages for events.
+
+```typescript
+const EVENT_TEMPLATES: Record<AuthEventType, (event: AuthEvent) => string>
+```
+
+### Usage
+
+```typescript
+import { EVENT_TEMPLATES } from "better-auth-studio";
+import type { AuthEvent } from "better-auth-studio";
+
+const event: AuthEvent = {
+  id: "123",
+  type: "user.logged_in",
+  timestamp: new Date(),
+  status: "success",
+  userId: "user-456",
+  metadata: { name: "Alice", email: "alice@example.com" },
+  source: "app",
+};
+
+const message = EVENT_TEMPLATES[event.type](event);
+console.log(message); // "Alice logged in"
+```
+
+### Template Examples
+
+- `user.joined` (success): `"Alice joined!"`
+- `user.joined` (failed): `"alice@example.com failed to join"`
+- `user.logged_in` (success): `"Alice logged in"`
+- `organization.created` (success): `"New organization \"Acme Corp\" created by Alice"`
+- `login.failed`: `"Failed login attempt for alice@example.com"`
+
+## getEventSeverity
+
+Helper function to determine the severity level of an event.
+
+```typescript
+function getEventSeverity(
+  event: AuthEvent | { type: AuthEventType; status?: "success" | "failed" },
+  status?: "success" | "failed"
+): "info" | "success" | "warning" | "failed"
+```
+
+### Parameters
+
+<ParamField path="event" type="AuthEvent | { type: AuthEventType; status?: 'success' | 'failed' }" required>
+  The event object or minimal event-like object with type and status
+</ParamField>
+
+<ParamField path="status" type="'success' | 'failed'">
+  Optional status override. If provided, uses this instead of `event.status`.
+</ParamField>
+
+### Returns
+
+<ResponseField name="severity" type="'info' | 'success' | 'warning' | 'failed'" required>
+  The severity level based on event type and status:
+  - `"failed"`: Status is failed, or event type indicates failure/ban/deletion
+  - `"success"`: Event indicates successful completion (joined, created, verified, logged in)
+  - `"warning"`: Event indicates caution (reset requests, verifications)
+  - `"info"`: Default for updates, changes, and other informational events
+</ResponseField>
+
+### Example
+
+```typescript
+import { getEventSeverity } from "better-auth-studio";
+
+const severity1 = getEventSeverity({ type: "user.joined", status: "success" });
+console.log(severity1); // "success"
+
+const severity2 = getEventSeverity({ type: "login.failed" });
+console.log(severity2); // "failed"
+
+const severity3 = getEventSeverity({ type: "password.reset_requested" });
+console.log(severity3); // "warning"
+```

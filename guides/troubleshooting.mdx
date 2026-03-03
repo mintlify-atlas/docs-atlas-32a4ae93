@@ -1,0 +1,773 @@
+---
+title: Troubleshooting
+description: Common issues, error messages, and solutions for Better Auth Studio
+---
+
+## Overview
+
+This guide covers common issues you may encounter when using Better Auth Studio and provides step-by-step solutions.
+
+## Installation Issues
+
+### Cannot Find Module 'better-auth-studio'
+
+<Accordion title="Error Message">
+  ```bash
+  Error: Cannot find module 'better-auth-studio'
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Verify installation">
+      ```bash
+      # Check if installed
+      pnpm list better-auth-studio
+      ```
+    </Step>
+    
+    <Step title="Install the package">
+      ```bash
+      # Install as dev dependency
+      pnpm add -D better-auth-studio
+      
+      # Or use pnpx without installation
+      pnpx better-auth-studio start
+      ```
+    </Step>
+    
+    <Step title="Clear package manager cache">
+      ```bash
+      # pnpm
+      pnpm store prune
+      
+      # npm
+      npm cache clean --force
+      
+      # yarn
+      yarn cache clean
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### Node Version Incompatibility
+
+<Accordion title="Error Message">
+  ```bash
+  Error: The engine "node" is incompatible with this module
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check Node version">
+      ```bash
+      node --version
+      ```
+      
+      Required: **Node.js v18 or higher**
+    </Step>
+    
+    <Step title="Update Node.js">
+      Download from [nodejs.org](https://nodejs.org) or use a version manager:
+      
+      ```bash
+      # Using nvm
+      nvm install 18
+      nvm use 18
+      
+      # Using fnm
+      fnm install 18
+      fnm use 18
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+## Configuration Issues
+
+### Auth Config Not Found
+
+<Accordion title="Error Message">
+  ```bash
+  ✖ Unable to locate your auth config file
+  ⚠ Unable to locate your auth config file. Watch mode will be disabled for this session.
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check file location">
+      The CLI searches for config in:
+      - `auth.ts`
+      - `src/auth.ts`
+      - `lib/auth.ts`
+      - Other common locations
+    </Step>
+    
+    <Step title="Specify config path explicitly">
+      ```bash
+      pnpx better-auth-studio start --config ./src/lib/auth.ts
+      ```
+    </Step>
+    
+    <Step title="Verify file exists">
+      ```bash
+      # Check if file exists
+      ls -la src/auth.ts
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### Invalid Auth Configuration
+
+<Accordion title="Error Message">
+  ```bash
+  ✖ Failed to load auth configuration
+  Error: Auth instance not found or invalid
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Verify auth export">
+      ```typescript
+      // auth.ts - Ensure you export auth instance
+      import { betterAuth } from "better-auth";
+      
+      export const auth = betterAuth({
+        database: /* ... */,
+        // ... other config
+      });
+      ```
+    </Step>
+    
+    <Step title="Check for syntax errors">
+      ```bash
+      # Run TypeScript check
+      pnpm tsc --noEmit
+      ```
+    </Step>
+    
+    <Step title="Verify database config">
+      Ensure database adapter is properly configured:
+      ```typescript
+      import { prismaAdapter } from "better-auth/adapters/prisma";
+      import { PrismaClient } from "@prisma/client";
+      
+      const prisma = new PrismaClient();
+      
+      export const auth = betterAuth({
+        database: prismaAdapter(prisma, {
+          provider: "postgresql",
+        }),
+      });
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+## Database Issues
+
+### Database Connection Failed
+
+<Accordion title="Error Message">
+  ```bash
+  Error: Can't reach database server
+  Error: Connection refused
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check database is running">
+      ```bash
+      # PostgreSQL
+      pg_isready
+      
+      # MySQL
+      mysqladmin ping
+      
+      # Check Docker containers
+      docker ps
+      ```
+    </Step>
+    
+    <Step title="Verify connection string">
+      ```bash
+      # Check .env file
+      cat .env | grep DATABASE_URL
+      ```
+      
+      Example formats:
+      ```bash
+      # PostgreSQL
+      DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+      
+      # MySQL
+      DATABASE_URL="mysql://user:password@localhost:3306/dbname"
+      
+      # SQLite
+      DATABASE_URL="file:./dev.db"
+      ```
+    </Step>
+    
+    <Step title="Test database connection">
+      ```bash
+      # Prisma
+      pnpm prisma db push
+      
+      # Drizzle
+      pnpm drizzle-kit push
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### Missing Database Tables
+
+<Accordion title="Error Message">
+  ```bash
+  Error: Table 'user' doesn't exist
+  Error: relation "user" does not exist
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Run migrations">
+      ```bash
+      # Prisma
+      pnpm prisma migrate dev
+      
+      # Drizzle
+      pnpm drizzle-kit push
+      
+      # Better Auth migration
+      pnpm better-auth migrate
+      ```
+    </Step>
+    
+    <Step title="Verify schema">
+      ```bash
+      # Prisma - check schema
+      pnpm prisma db pull
+      
+      # View current tables
+      pnpm prisma studio
+      ```
+    </Step>
+    
+    <Step title="Reset database (development only)">
+      ```bash
+      # ⚠️ This deletes all data!
+      pnpm prisma migrate reset
+      ```
+    </Step>
+  </Steps>
+  
+  <Warning>
+    Never run `migrate reset` in production!
+  </Warning>
+</Accordion>
+
+### lastSeenAt Column Missing
+
+<Accordion title="Error Message">
+  ```bash
+  Error: column "lastSeenAt" does not exist
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  The `lastSeenAt` feature requires adding the column to your user table:
+  
+  <Steps>
+    <Step title="Add column to schema">
+      ```prisma
+      // schema.prisma
+      model User {
+        id           String    @id
+        email        String
+        // ... other fields
+        lastSeenAt   DateTime? // Add this field
+      }
+      ```
+    </Step>
+    
+    <Step title="Run migration">
+      ```bash
+      pnpm prisma migrate dev --name add-last-seen-at
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+## Server Issues
+
+### Port Already in Use
+
+<Accordion title="Error Message">
+  ```bash
+  Error: listen EADDRINUSE: address already in use :::3002
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Find process using port">
+      ```bash
+      # Linux/Mac
+      lsof -i :3002
+      
+      # Windows
+      netstat -ano | findstr :3002
+      ```
+    </Step>
+    
+    <Step title="Kill the process">
+      ```bash
+      # Linux/Mac
+      kill -9 <PID>
+      
+      # Windows
+      taskkill /PID <PID> /F
+      ```
+    </Step>
+    
+    <Step title="Or use different port">
+      ```bash
+      pnpx better-auth-studio start --port 3001
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### Server Won't Start
+
+<Accordion title="Error Message">
+  ```bash
+  Error: Failed to start studio
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check for errors in terminal">
+      Look for specific error messages that indicate the root cause.
+    </Step>
+    
+    <Step title="Verify all dependencies">
+      ```bash
+      # Reinstall dependencies
+      rm -rf node_modules
+      pnpm install
+      ```
+    </Step>
+    
+    <Step title="Check firewall/antivirus">
+      Ensure your firewall isn't blocking the port.
+    </Step>
+    
+    <Step title="Try minimal config">
+      ```bash
+      pnpx better-auth-studio start --no-open --port 3003
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+## Watch Mode Issues
+
+### Watch Mode Not Triggering
+
+<Accordion title="Problem">
+  Config file changes don't trigger reload.
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Verify watch mode is enabled">
+      ```bash
+      pnpx better-auth-studio start --watch
+      
+      # Look for this message:
+      # 👀 Watch mode enabled - config changes will reload automatically
+      ```
+    </Step>
+    
+    <Step title="Check file permissions">
+      ```bash
+      # Ensure file is writable
+      ls -la src/auth.ts
+      ```
+    </Step>
+    
+    <Step title="Specify config path">
+      ```bash
+      pnpx better-auth-studio start --watch --config ./src/auth.ts
+      ```
+    </Step>
+    
+    <Step title="Check for file system issues">
+      Some systems (WSL, Docker volumes) may have issues with file watchers.
+      
+      Try saving the file again or restarting the studio.
+    </Step>
+  </Steps>
+</Accordion>
+
+### Reload Keeps Failing
+
+<Accordion title="Error Message">
+  ```bash
+  ✖ Reload failed (src/auth.ts) - Unable to reload auth configuration
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check for syntax errors">
+      ```bash
+      # Validate TypeScript
+      pnpm tsc --noEmit
+      ```
+    </Step>
+    
+    <Step title="Look at detailed errors">
+      Check terminal output for specific error messages.
+    </Step>
+    
+    <Step title="Revert recent changes">
+      Undo recent config changes to identify the problematic change.
+    </Step>
+    
+    <Step title="Restart studio">
+      ```bash
+      # Stop with Ctrl+C, then restart
+      pnpx better-auth-studio start --watch
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### WebSocket Connection Failed
+
+<Accordion title="Problem">
+  Browser UI doesn't update after config changes.
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check browser console">
+      Open DevTools (F12) and look for WebSocket errors.
+    </Step>
+    
+    <Step title="Verify WebSocket connection">
+      Look for "Connected to Better Auth Studio (watch mode)" message in browser console.
+    </Step>
+    
+    <Step title="Check firewall/proxy">
+      Some firewalls or proxies block WebSocket connections.
+    </Step>
+    
+    <Step title="Manually refresh">
+      If WebSocket fails, manually refresh the browser after config changes.
+    </Step>
+  </Steps>
+</Accordion>
+
+## Self-Hosting Issues
+
+### Cannot Access Studio in Production
+
+<Accordion title="Problem">
+  Studio works locally but not in production.
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check basePath configuration">
+      ```typescript
+      // studio.config.ts
+      const config: StudioConfig = {
+        basePath: "/api/studio", // Must match your route
+      };
+      ```
+    </Step>
+    
+    <Step title="Verify route handler">
+      ```typescript
+      // app/api/studio/[[...path]]/route.ts
+      import { betterAuthStudio } from "better-auth-studio/nextjs";
+      import studioConfig from "@/studio.config";
+      
+      const handler = betterAuthStudio(studioConfig);
+      
+      export { handler as GET, handler as POST };
+      ```
+    </Step>
+    
+    <Step title="Check access control">
+      ```typescript
+      access: {
+        roles: ["admin"],
+        allowEmails: ["admin@example.com"],
+      }
+      ```
+      
+      Ensure your user has required role/email.
+    </Step>
+    
+    <Step title="Verify build output">
+      ```bash
+      # Next.js - check if route exists in build
+      ls -la .next/server/app/api/studio
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+### Access Denied
+
+<Accordion title="Error Message">
+  ```bash
+  403 Forbidden
+  Access denied to Better Auth Studio
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check access configuration">
+      ```typescript
+      access: {
+        roles: ["admin"],
+        allowEmails: ["your-email@example.com"],
+      }
+      ```
+    </Step>
+    
+    <Step title="Verify user role">
+      Check database to confirm your user has the required role.
+    </Step>
+    
+    <Step title="Check authentication">
+      Ensure you're logged in with a valid session.
+    </Step>
+  </Steps>
+</Accordion>
+
+## Build & Deployment Issues
+
+### Build Fails in Production
+
+<Accordion title="Error Message">
+  ```bash
+  Error: Module not found: Can't resolve 'better-auth-studio'
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Install as regular dependency">
+      For self-hosting, install as a regular dependency (not devDependency):
+      
+      ```bash
+      pnpm add better-auth-studio
+      ```
+      
+      ```json
+      // package.json
+      {
+        "dependencies": {
+          "better-auth-studio": "latest" // Not in devDependencies!
+        }
+      }
+      ```
+    </Step>
+    
+    <Step title="Verify build configuration">
+      ```bash
+      # Clear build cache
+      rm -rf .next
+      pnpm build
+      ```
+    </Step>
+  </Steps>
+  
+  <Note>
+    CLI usage can use devDependency, but self-hosting requires regular dependency.
+  </Note>
+</Accordion>
+
+### Static Assets Not Found
+
+<Accordion title="Error Message">
+  ```bash
+  404 Not Found: /assets/index-abc123.js
+  ```
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check public directory">
+      Ensure studio assets are included in your build.
+    </Step>
+    
+    <Step title="Verify basePath">
+      ```typescript
+      metadata: {
+        basePath: "/api/studio",
+      }
+      ```
+      
+      basePath must match your route mounting point.
+    </Step>
+    
+    <Step title="Check build output">
+      Verify assets are in the build output directory.
+    </Step>
+  </Steps>
+</Accordion>
+
+## Performance Issues
+
+### Slow User List Loading
+
+<Accordion title="Problem">
+  User list takes too long to load with many users.
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Check database indexes">
+      Ensure proper indexes on frequently queried columns:
+      ```sql
+      CREATE INDEX idx_user_email ON user(email);
+      CREATE INDEX idx_user_created_at ON user(createdAt);
+      ```
+    </Step>
+    
+    <Step title="Use pagination">
+      The studio uses pagination by default. Ensure it's working properly.
+    </Step>
+    
+    <Step title="Optimize queries">
+      Check database slow query logs for optimization opportunities.
+    </Step>
+  </Steps>
+</Accordion>
+
+### High Memory Usage
+
+<Accordion title="Problem">
+  Studio consumes excessive memory.
+</Accordion>
+
+<Accordion title="Solution">
+  <Steps>
+    <Step title="Limit bulk operations">
+      Reduce the number of records in bulk operations.
+    </Step>
+    
+    <Step title="Check for memory leaks">
+      Restart the studio periodically in development.
+    </Step>
+    
+    <Step title="Optimize database queries">
+      Use selective field queries instead of fetching all data.
+    </Step>
+  </Steps>
+</Accordion>
+
+## Getting Help
+
+### Before Opening an Issue
+
+<Steps>
+  <Step title="Search existing issues">
+    Check [GitHub Issues](https://github.com/Kinfe123/better-auth-studio/issues) for similar problems.
+  </Step>
+  
+  <Step title="Enable debug mode">
+    Run with additional logging:
+    ```bash
+    DEBUG=* pnpx better-auth-studio start
+    ```
+  </Step>
+  
+  <Step title="Gather information">
+    - Better Auth Studio version
+    - Node.js version
+    - Database adapter and version
+    - Operating system
+    - Full error messages
+    - Steps to reproduce
+  </Step>
+</Steps>
+
+### Creating an Issue
+
+When opening an issue, include:
+
+```markdown
+## Environment
+- Better Auth Studio: v1.x.x
+- Node.js: v18.x.x
+- Database: PostgreSQL 14
+- OS: macOS 13.x
+
+## Steps to Reproduce
+1. Run `pnpx better-auth-studio start`
+2. Navigate to /users
+3. Click "Bulk Seed"
+4. Error occurs
+
+## Error Message
+```
+[Full error message here]
+```
+
+## Expected Behavior
+Bulk seeding should create users without errors.
+
+## Actual Behavior
+Error is thrown when trying to create users.
+```
+
+### Community Support
+
+<CardGroup cols={2}>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/Kinfe123/better-auth-studio/issues">
+    Report bugs and request features
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.gg/better-auth">
+    Get community help and support
+  </Card>
+  <Card title="Documentation" icon="book" href="/">
+    Browse the full documentation
+  </Card>
+  <Card title="Examples" icon="code" href="https://github.com/Kinfe123/better-auth-studio/tree/main/examples">
+    View example implementations
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLI Usage" icon="terminal" href="/guides/cli-usage">
+    Master the CLI options
+  </Card>
+  <Card title="Watch Mode" icon="eye" href="/guides/watch-mode">
+    Learn about auto-reload
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/self-hosting/overview">
+    Deploy to production
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/overview">
+    Advanced configuration options
+  </Card>
+</CardGroup>

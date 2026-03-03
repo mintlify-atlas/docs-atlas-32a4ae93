@@ -1,0 +1,670 @@
+---
+title: 'Developer Tools'
+description: 'Test OAuth providers, validate config, generate secrets, hash passwords, and more'
+icon: 'wrench'
+---
+
+## Overview
+
+The Developer Tools section provides essential utilities for developing and testing your Better Auth integration. Test OAuth flows, validate configuration, generate secrets, decode JWTs, check password strength, and export data.
+
+## Accessing Developer Tools
+
+Navigate to **Tools** from the main sidebar to access all developer utilities.
+
+## Available Tools
+
+### OAuth Testing
+
+<Card title="Test OAuth Providers" icon="user-shield">
+Test your OAuth provider configurations with real authentication flows. Supports all Better Auth OAuth providers including GitHub, Google, Discord, Microsoft, and more.
+</Card>
+
+#### How to Test OAuth
+
+<Steps>
+  <Step title="Open OAuth Tester">
+    Click **Test OAuth Providers** in the Tools page
+  </Step>
+
+  <Step title="Select Provider">
+    Choose from your configured OAuth providers:
+    - GitHub
+    - Google
+    - Discord
+    - Microsoft
+    - Twitter
+    - Facebook
+    - And many more...
+  </Step>
+
+  <Step title="Start Test">
+    Click **Test** to initiate OAuth flow:
+    - Opens popup window with provider login
+    - Authenticates with OAuth provider
+    - Returns to Studio with results
+  </Step>
+
+  <Step title="View Results">
+    Terminal shows test progress:
+    - Opening OAuth popup
+    - Waiting for authentication
+    - Verifying with Better Auth
+    - User information returned
+    - Success or failure status
+  </Step>
+</Steps>
+
+#### OAuth Test Output
+
+Successful test shows:
+- User name and email from provider
+- OAuth account created or linked
+- Session established
+- Test duration
+
+Failed test shows:
+- Error message
+- Possible causes
+- Configuration suggestions
+
+<Warning>
+OAuth tests create real user accounts and sessions. Use test/development environments.
+</Warning>
+
+### Configuration Validator
+
+<Card title="Validate Better Auth Config" icon="check-circle">
+Analyze your Better Auth configuration for errors, warnings, and best practice violations.
+</Card>
+
+#### Running Validation
+
+<Steps>
+  <Step title="Open Validator">
+    Click **Validate Configuration** tool
+  </Step>
+
+  <Step title="Run Checks">
+    Validator automatically checks:
+    - Required configuration fields
+    - Plugin compatibility
+    - Database adapter setup
+    - OAuth provider configuration
+    - Security settings
+    - Email provider setup
+  </Step>
+
+  <Step title="Review Results">
+    Results are categorized:
+    - **Errors** (red) - Must fix
+    - **Warnings** (yellow) - Should review
+    - **Passes** (green) - Configured correctly
+  </Step>
+
+  <Step title="Fix Issues">
+    Each issue includes:
+    - Description of the problem
+    - Severity level
+    - Suggested fix
+    - Code example (when applicable)
+  </Step>
+</Steps>
+
+#### Validation Categories
+
+<Accordion title="Security Checks">
+- Secret key strength
+- Session expiration settings
+- CORS configuration
+- HTTPS enforcement
+- Cookie security flags
+</Accordion>
+
+<Accordion title="Plugin Checks">
+- Plugin compatibility
+- Required dependencies
+- Plugin configuration
+- Conflicting plugins
+</Accordion>
+
+<Accordion title="Database Checks">
+- Adapter configuration
+- Database connection
+- Schema compatibility
+- Migration status
+</Accordion>
+
+<Accordion title="OAuth Checks">
+- Provider credentials
+- Redirect URI configuration
+- Scope settings
+- Provider-specific settings
+</Accordion>
+
+### Database Connection Test
+
+<Card title="Test Database" icon="database">
+Verify your database connection and adapter configuration.
+</Card>
+
+<Steps>
+  <Step title="Run Test">
+    Click **Test Database Connection**
+  </Step>
+
+  <Step title="Connection Check">
+    Tests:
+    - Database reachability
+    - Adapter initialization
+    - Query execution
+    - Schema validation
+  </Step>
+
+  <Step title="View Results">
+    Success shows:
+    - Connection established
+    - Sample user record (if exists)
+    - Database type and version
+    
+    Failure shows:
+    - Error message
+    - Connection details
+    - Troubleshooting steps
+  </Step>
+</Steps>
+
+### Secret Generator
+
+<Card title="Generate Secure Secrets" icon="key">
+Create cryptographically secure secrets for `BETTER_AUTH_SECRET` and other sensitive configuration.
+</Card>
+
+#### Generate a Secret
+
+<Steps>
+  <Step title="Open Generator">
+    Click **Generate Secret** tool
+  </Step>
+
+  <Step title="Configure">
+    Choose secret options:
+    - **Length** - 16, 32 (default), 64, or 128 bytes
+    - **Format** - Hex or Base64
+  </Step>
+
+  <Step title="Generate">
+    Click **Generate Secret**
+    
+    Output includes:
+    - Secret value (copyable)
+    - Format and length
+    - Entropy bits
+    - `.env` format example
+  </Step>
+
+  <Step title="Save to .env (Self-hosted only)">
+    Click **Write to .env** to:
+    - Check for existing secret
+    - Confirm overwrite if exists
+    - Save to `.env` or `.env.local`
+    - Show file path
+  </Step>
+</Steps>
+
+<Info>
+**Recommended settings:**
+- Length: 32 bytes minimum
+- Format: Hex (more compatible)
+- Always use environment variables, never hardcode
+</Info>
+
+### Password Hasher
+
+<Card title="Hash Passwords" icon="lock">
+Generate password hashes for testing or migration purposes.
+</Card>
+
+<Steps>
+  <Step title="Open Hasher">
+    Click **Hash Password** tool
+  </Step>
+
+  <Step title="Enter Password">
+    - Type or paste password
+    - Optionally add salt
+    - Choose hash algorithm:
+      - SHA-256 (default)
+      - SHA-384
+      - SHA-512
+    - Select encoding:
+      - Hex (default)
+      - Base64
+      - Base64URL
+  </Step>
+
+  <Step title="Generate Hash">
+    Click **Hash Password**
+    
+    Output shows:
+    - Hashed value (copyable)
+    - Algorithm and encoding used
+    - Salt (if provided)
+  </Step>
+</Steps>
+
+<Warning>
+This tool is for testing only. Better Auth handles password hashing automatically.
+</Warning>
+
+### Password Strength Checker
+
+<Card title="Check Password Strength" icon="shield-halved">
+Test passwords against your Better Auth password requirements.
+</Card>
+
+<Steps>
+  <Step title="Open Checker">
+    Click **Password Strength Checker**
+  </Step>
+
+  <Step title="Enter Password">
+    Type the password to analyze
+  </Step>
+
+  <Step title="Check Strength">
+    Click **Check Password**
+    
+    Results show:
+    - **Strength Score** - Weak, Fair, Good, Strong, Very Strong
+    - **Requirements** - Passed/Failed checks:
+      - Minimum length
+      - Maximum length
+      - Uppercase letters
+      - Lowercase letters
+      - Numbers
+      - Special characters
+    - **Meets Config** - Whether it passes your Better Auth requirements
+  </Step>
+</Steps>
+
+### JWT Decoder
+
+<Card title="Decode & Verify JWTs" icon="fingerprint">
+Decode JWT tokens and verify signatures.
+</Card>
+
+<Steps>
+  <Step title="Open Decoder">
+    Click **JWT Decoder** tool
+  </Step>
+
+  <Step title="Paste JWT">
+    Enter the JWT token to decode
+  </Step>
+
+  <Step title="Add Secret (Optional)">
+    Provide signing secret to verify signature
+  </Step>
+
+  <Step title="Decode">
+    Click **Decode JWT**
+    
+    Output shows:
+    - **Header** - Algorithm, token type
+    - **Payload** - Claims, user data, expiration
+    - **Signature** - Valid or Invalid (if secret provided)
+    - **Decoded Data** - Pretty-printed JSON
+  </Step>
+</Steps>
+
+### UUID Generator & Validator
+
+<Card title="Generate UUIDs" icon="hashtag">
+Create UUID v4 identifiers or validate existing UUIDs.
+</Card>
+
+#### Generate UUIDs
+
+<Steps>
+  <Step title="Open Generator">
+    Click **UUID Generator**
+  </Step>
+
+  <Step title="Set Count">
+    Choose how many UUIDs to generate (1-100)
+  </Step>
+
+  <Step title="Generate">
+    Click **Generate UUIDs**
+    
+    Each UUID is:
+    - Displayed in a list
+    - Copyable with one click
+    - Valid UUID v4 format
+  </Step>
+</Steps>
+
+#### Validate UUIDs
+
+<Steps>
+  <Step title="Paste UUID">
+    Enter UUID in validation field
+  </Step>
+
+  <Step title="Validate">
+    Results show:
+    - **Valid** or **Invalid**
+    - **Version** - UUID version (v1, v4, etc.)
+    - **Variant** - RFC 4122 compliance
+  </Step>
+</Steps>
+
+### Token Generator
+
+<Card title="Generate API Keys & Tokens" icon="ticket">
+Create API keys or custom JWT tokens for testing.
+</Card>
+
+<Steps>
+  <Step title="Open Generator">
+    Click **Token Generator**
+  </Step>
+
+  <Step title="Choose Type">
+    - **API Key** - Random secure string
+    - **JWT** - Signed JSON Web Token
+  </Step>
+
+  <Step title="Configure JWT (if JWT selected)">
+    - **Subject** - User ID or identifier
+    - **Audience** - Target application
+    - **Expires In** - Minutes until expiration
+    - **Secret** - Signing secret
+    - **Custom Claims** - Additional JSON data
+  </Step>
+
+  <Step title="Generate">
+    Click **Generate Token**
+    
+    Output shows:
+    - Token value (copyable)
+    - Type and configuration
+    - Expiration time (for JWTs)
+  </Step>
+</Steps>
+
+### Data Export
+
+<Card title="Export Database Data" icon="download">
+Export users, sessions, organizations, and other data to JSON or CSV.
+</Card>
+
+<Steps>
+  <Step title="Open Exporter">
+    Click **Export Data** tool
+  </Step>
+
+  <Step title="Select Tables">
+    Choose what to export:
+    - Users
+    - Sessions
+    - Organizations
+    - Teams
+    - Accounts
+    - Invitations
+  </Step>
+
+  <Step title="Configure Export">
+    - **Format** - JSON or CSV
+    - **Limit** - Number of records (default 1000)
+  </Step>
+
+  <Step title="Export">
+    Click **Export**
+    
+    Downloads file with:
+    - Selected data
+    - Chosen format
+    - Timestamp in filename
+  </Step>
+</Steps>
+
+### OAuth Credentials Helper
+
+<Card title="Get OAuth Credentials" icon="circle-user">
+Fetch test OAuth credentials from Better Auth Studio backend for development.
+</Card>
+
+<Steps>
+  <Step title="Open Helper">
+    Click **OAuth Credentials** tool
+  </Step>
+
+  <Step title="Select Provider">
+    Choose OAuth provider:
+    - Google
+    - GitHub
+    - Discord
+    - Microsoft
+    - And more...
+  </Step>
+
+  <Step title="Enter Origin">
+    Provide your app origin:
+    - `localhost:3000`
+    - `myapp.com`
+    - Auto-detected from config
+  </Step>
+
+  <Step title="Fetch Credentials">
+    Click **Fetch Credentials**
+    
+    Returns:
+    - **Client ID** - OAuth client ID
+    - **Client Secret** - OAuth secret (hidden by default)
+    - **Redirect URI** - Configured callback URL
+  </Step>
+
+  <Step title="Save to .env (Self-hosted only)">
+    Optionally write credentials to `.env` file:
+    - Checks for existing values
+    - Confirms overwrite
+    - Saves in correct format
+  </Step>
+</Steps>
+
+<Info>
+This uses Better Auth Studio's test credentials for development. Use your own credentials in production.
+</Info>
+
+### Migration Helpers
+
+<Card title="Run Migrations" icon="code-branch">
+Migrate users from other authentication providers to Better Auth.
+</Card>
+
+#### Supported Migrations
+
+<CardGroup cols={2}>
+  <Card title="Clerk" icon="user-lock">
+    Migrate from Clerk:
+    - Downloads Clerk CSV export
+    - Fetches REST API data
+    - Preserves passwords and TOTP secrets
+    - Respects Better Auth plugins
+  </Card>
+
+  <Card title="Supabase" icon="database">
+    Coming soon
+  </Card>
+
+  <Card title="Auth0" icon="shield">
+    Coming soon
+  </Card>
+
+  <Card title="NextAuth.js" icon="N">
+    Coming soon
+  </Card>
+</CardGroup>
+
+#### Running Clerk Migration
+
+<Steps>
+  <Step title="Open Migration Tool">
+    Click **Run Migration** tool
+  </Step>
+
+  <Step title="Select Provider">
+    Choose **Clerk**
+  </Step>
+
+  <Step title="Review Migration Script">
+    See the full migration code that will run
+  </Step>
+
+  <Step title="Execute">
+    Click **Run Migration**
+    
+    Terminal shows:
+    - Migration preparation
+    - CSV download progress
+    - User creation progress
+    - Success/failure count
+    - Completion summary
+  </Step>
+</Steps>
+
+<Warning>
+Migrations modify your database. Always test in a development environment first.
+</Warning>
+
+#### Custom Migration Script
+
+Write your own migration:
+
+<Steps>
+  <Step title="Select Custom Script">
+    Choose **Custom Script** option
+  </Step>
+
+  <Step title="Write Migration Code">
+    Use the code editor to write your migration:
+    ```typescript
+    import { migrateUser } from '@better-auth/migration';
+    
+    async function run() {
+      const users = await fetchLegacyUsers();
+      
+      for (const user of users) {
+        await migrateUser({
+          email: user.email,
+          passwordHash: user.passwordHash,
+          metadata: user.metadata,
+        });
+      }
+    }
+    
+    run();
+    ```
+  </Step>
+
+  <Step title="Execute">
+    Click **Run Migration** to execute your script
+  </Step>
+</Steps>
+
+## Tool Categories
+
+Tools are organized by function:
+
+- **OAuth** - OAuth provider testing and credentials
+- **Database** - Connection testing and data export
+- **Testing** - Password checking, JWT decoding
+- **Utilities** - Secret generation, UUID creation, token generation
+- **Migration** - Provider migration tools
+
+## Best Practices
+
+<Steps>
+  <Step title="Test in Development">
+    Always test OAuth, migrations, and configurations in development before production.
+  </Step>
+
+  <Step title="Use Strong Secrets">
+    - Generate secrets with 32+ bytes
+    - Use hex encoding for compatibility
+    - Never commit secrets to version control
+  </Step>
+
+  <Step title="Validate Configuration">
+    - Run config validator before deploying
+    - Fix all errors
+    - Address warnings when possible
+  </Step>
+
+  <Step title="Export Before Migrations">
+    - Export existing data before running migrations
+    - Test migration on backup database
+    - Verify data integrity after migration
+  </Step>
+</Steps>
+
+## Security Considerations
+
+<Warning>
+Developer tools are powerful. Follow these security guidelines:
+</Warning>
+
+- **Restrict Access** - Only allow trusted developers to access Tools
+- **Use Test Accounts** - OAuth tests create real accounts; use test users
+- **Protect Secrets** - Never share generated secrets or paste them publicly
+- **Development Only** - Some tools (like migration) should only run in dev
+- **Review Migrations** - Always review migration scripts before execution
+
+## Troubleshooting
+
+<Accordion title="OAuth test popup blocked">
+- Allow popups for Better Auth Studio domain
+- Check browser popup settings
+- Try different browser
+</Accordion>
+
+<Accordion title="OAuth test times out">
+- Verify OAuth provider credentials are correct
+- Check redirect URI matches configuration
+- Ensure OAuth app is not suspended
+- Review Better Auth logs for errors
+</Accordion>
+
+<Accordion title="Cannot write to .env file">
+Only available in self-hosted mode:
+- Verify file system permissions
+- Check `.env` file exists and is writable
+- Ensure running in self-hosted deployment
+</Accordion>
+
+<Accordion title="Config validation shows false errors">
+- Ensure using latest Better Auth version
+- Check plugin compatibility
+- Review Better Auth documentation for changes
+</Accordion>
+
+## API Reference
+
+Developer tools use these endpoints:
+
+- `GET /api/tools/oauth/providers` - List OAuth providers
+- `POST /api/tools/oauth/test` - Start OAuth test
+- `GET /api/tools/oauth/status` - Check OAuth test status
+- `POST /api/tools/validate-config` - Validate configuration
+- `GET /api/database/test` - Test database connection
+- `POST /api/tools/generate-secret` - Generate secret
+- `POST /api/tools/password-strength` - Check password
+- `POST /api/tools/migrations/run` - Execute migration
+
+## Related Features
+
+- **[User Management](/features/user-management)** - Test tools create users
+- **[Session Management](/features/session-management)** - OAuth tests create sessions
+- **[Event Tracking](/features/event-tracking)** - Tool actions generate events

@@ -1,0 +1,252 @@
+---
+title: SolidStart Adapter
+description: API reference for the SolidStart framework adapter
+---
+
+# SolidStart Adapter
+
+Adapter for integrating Better Auth Studio with SolidStart applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/solid-start';
+```
+
+## betterAuthStudio()
+
+Creates a SolidStart-compatible API handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (event: ApiEvent) => Promise<Response>
+```
+
+### Type Definitions
+
+```typescript
+type ApiEvent = {
+  request: Request;
+  params: Record<string, string>;
+  locals: Record<string, unknown>;
+  env: Record<string, unknown>;
+  fetch: typeof fetch;
+  url: URL;
+};
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(event: ApiEvent) => Promise<Response>">
+  An async function that accepts a SolidStart ApiEvent and returns a Response
+</ResponseField>
+
+## Usage
+
+### Catch-all Route Handler
+
+Create a catch-all route to handle all studio requests:
+
+```typescript
+// src/routes/api/studio/[...path].ts
+import { betterAuthStudio } from 'better-auth-studio/solid-start';
+import { auth } from '~/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### Simplified Version
+
+```typescript
+// src/routes/api/studio/[...path].ts
+import { betterAuthStudio } from 'better-auth-studio/solid-start';
+import { auth } from '~/lib/auth';
+
+const handler = betterAuthStudio({ auth });
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### With Access Control
+
+```typescript
+// src/routes/api/studio/[...path].ts
+import { betterAuthStudio } from 'better-auth-studio/solid-start';
+import { auth } from '~/lib/auth';
+
+const handler = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com']
+  }
+});
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### With Custom Middleware
+
+```typescript
+// src/routes/api/studio/[...path].ts
+import { betterAuthStudio } from 'better-auth-studio/solid-start';
+import { auth } from '~/lib/auth';
+import type { ApiEvent } from 'better-auth-studio/solid-start';
+
+const studioHandler = betterAuthStudio({ auth });
+
+const withLogging = async (event: ApiEvent) => {
+  console.log(`Studio request: ${event.request.method} ${event.url}`);
+  const response = await studioHandler(event);
+  console.log(`Studio response: ${response.status}`);
+  return response;
+};
+
+export const GET = withLogging;
+export const POST = withLogging;
+export const PUT = withLogging;
+export const DELETE = withLogging;
+export const PATCH = withLogging;
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts SolidStart ApiEvent to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // event.request.method
+  headers: Record<string, string>; // event.request.headers
+  body?: any;            // Parsed from event.request
+};
+```
+
+### Base Path Handling
+
+The adapter automatically strips the base path from URLs:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Content Type Handling
+
+The adapter handles multiple content types:
+- `application/json` → `event.request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### ApiEvent Properties
+
+The SolidStart ApiEvent provides access to:
+- `event.request` - Standard Request object
+- `event.params` - Route parameters
+- `event.locals` - Server-side local storage
+- `event.env` - Environment variables
+- `event.fetch` - Scoped fetch function
+- `event.url` - Parsed URL object
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## File Structure
+
+```
+src/
+├── routes/
+│   └── api/
+│       └── studio/
+│           └── [...path].ts
+└── lib/
+    └── auth.ts
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

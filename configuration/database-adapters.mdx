@@ -1,0 +1,163 @@
+---
+title: Database Adapters
+description: Configure database adapters for Better Auth Studio
+---
+
+Better Auth Studio automatically detects and works with various database adapters from your Better Auth configuration.
+
+## Supported Adapters
+
+Studio supports the following database adapters:
+
+- **Prisma** (`prismaAdapter`)
+- **Drizzle** (`drizzleAdapter`)
+- **SQLite** (`better-sqlite3`)
+- **PostgreSQL** (via Prisma or Drizzle)
+- **MySQL** (via Prisma or Drizzle)
+
+## Configuration
+
+The database adapter is configured in your Better Auth instance. Studio automatically reads this configuration from your `auth.ts` file.
+
+### Prisma Setup
+
+```typescript auth.ts
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: "postgresql", // or "mysql", "sqlite"
+  }),
+  // ... other config
+});
+```
+
+### Drizzle Setup
+
+```typescript auth.ts
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./database";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg", // or "mysql", "sqlite"
+  }),
+  // ... other config
+});
+```
+
+### SQLite Setup
+
+```typescript auth.ts
+import { betterAuth } from "better-auth";
+import Database from "better-sqlite3";
+
+export const auth = betterAuth({
+  database: new Database("./better-auth.db"),
+  // ... other config
+});
+```
+
+## Database Configuration Options
+
+<ParamField path="database.type" type="string">
+  The type of database adapter being used (e.g., "drizzle", "prisma", "sqlite")
+</ParamField>
+
+<ParamField path="database.adapter" type="string">
+  The specific adapter implementation name
+</ParamField>
+
+<ParamField path="database.provider" type="string">
+  The database provider: `"postgresql"`, `"mysql"`, `"sqlite"`, `"pg"`
+</ParamField>
+
+<ParamField path="database.dialect" type="string">
+  The SQL dialect used by the database
+</ParamField>
+
+<ParamField path="database.casing" type="string">
+  The casing convention for database column names
+</ParamField>
+
+<ParamField path="database.debugLogs" type="boolean">
+  Enable debug logging for database queries
+</ParamField>
+
+<ParamField path="database.url" type="string">
+  The database connection URL or connection string
+</ParamField>
+
+## Auto-Detection
+
+<Info>
+Studio automatically detects your database adapter from the Better Auth configuration. You don't need to configure the adapter separately for Studio.
+</Info>
+
+When you start Studio, it:
+
+1. Searches for your `auth.ts` configuration file
+2. Loads the Better Auth instance
+3. Extracts the database adapter
+4. Uses the adapter for all database operations
+
+## Adapter Interface
+
+Studio extends the internal Better Auth adapter with additional methods:
+
+```typescript
+interface AuthAdapter {
+  // User operations
+  createUser(data: any): Promise<any>;
+  getUsers(): Promise<any[]>;
+  
+  // Session operations
+  createSession(data: any): Promise<any>;
+  getSessions(): Promise<any[]>;
+  
+  // Organization operations
+  createOrganization(data: any): Promise<any>;
+  
+  // Account operations
+  createAccount(data: any): Promise<any>;
+  
+  // Verification operations
+  createVerification(data: any): Promise<any>;
+  
+  // Generic CRUD operations
+  findMany<T = any>(options: {
+    model: string;
+    where?: any;
+    limit?: number;
+    offset?: number;
+  }): Promise<T[]>;
+}
+```
+
+## Troubleshooting
+
+<Warning>
+If Studio cannot detect your database adapter, ensure:
+
+- Your `auth.ts` file exports the auth instance as `export const auth` or as default export
+- The database adapter is properly configured in Better Auth
+- You don't have `import 'server-only'` in your auth config (temporarily remove it for CLI usage)
+</Warning>
+
+### Custom Adapter Paths
+
+If your auth configuration is in a non-standard location, specify it with the `--config` flag:
+
+```bash
+pnpm better-auth-studio start --config ./src/lib/auth.ts
+```
+
+## Related
+
+- [Self-Hosting Configuration](/self-hosting/configuration)
+- [CLI Usage](/cli/start)

@@ -1,0 +1,364 @@
+---
+title: 'better-auth-studio init'
+description: 'Initialize Better Auth Studio for self-hosting in your application'
+---
+
+## Overview
+
+The `init` command sets up Better Auth Studio for self-hosting by creating the necessary configuration files and route handlers for your framework.
+
+<Warning>
+  Self-hosting is currently in **beta**. Please report any issues on [GitHub](https://github.com/Kinfe123/better-auth-studio).
+</Warning>
+
+## Usage
+
+```bash
+better-auth-studio init [options]
+```
+
+## Parameters
+
+<ParamField path="--api-dir" type="string">
+  Custom app directory path for Next.js projects.
+
+  By default, the command auto-detects `app` or `src/app` directories. Use this option when your Next.js app directory is in a non-standard location.
+
+  **Examples:**
+  ```bash
+  # Standard locations (auto-detected)
+  better-auth-studio init
+  
+  # Custom app directory
+  better-auth-studio init --api-dir "app"
+  better-auth-studio init --api-dir "src/app"
+  better-auth-studio init --api-dir "custom/app"
+  ```
+
+  <Note>
+    This option is only relevant for Next.js projects. For other frameworks, it will be ignored.
+  </Note>
+</ParamField>
+
+## Supported Frameworks
+
+The init command automatically detects your framework and generates the appropriate setup:
+
+- **Next.js** (App Router)
+- **SvelteKit**
+- **Express** (manual setup required)
+- **Other frameworks** (manual setup instructions provided)
+
+## What It Does
+
+1. **Detects your framework** - Analyzes project files and dependencies
+2. **Creates `studio.config.ts`** - Studio configuration file
+3. **Generates route handlers** - Framework-specific API routes (for Next.js and SvelteKit)
+4. **Displays setup instructions** - Console output with next steps
+
+## Generated Files
+
+### studio.config.ts
+
+Created in the project root:
+
+```typescript
+import type { StudioConfig } from 'better-auth-studio';
+import { auth } from '@/lib/auth'; // Path varies by framework
+
+const config: StudioConfig = {
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'Admin Dashboard',
+    theme: 'dark',
+  },
+};
+
+export default config;
+```
+
+### Next.js Route Handler
+
+Created at `app/api/studio/[[...path]]/route.ts` (or `src/app/api/studio/[[...path]]/route.ts`):
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/nextjs';
+import studioConfig from '@/studio.config';
+
+const handler = betterAuthStudio(studioConfig);
+
+export {
+  handler as GET,
+  handler as POST,
+  handler as PUT,
+  handler as DELETE,
+  handler as PATCH,
+};
+```
+
+### SvelteKit Route Handler
+
+Created at `src/routes/api/studio/[...path]/+server.ts`:
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/svelte-kit';
+import studioConfig from '../../../../../studio.config.js';
+
+const handler = betterAuthStudio(studioConfig);
+
+export async function GET(event) {
+  return handler(event);
+}
+
+export async function POST(event) {
+  return handler(event);
+}
+
+export async function PUT(event) {
+  return handler(event);
+}
+
+export async function DELETE(event) {
+  return handler(event);
+}
+
+export async function PATCH(event) {
+  return handler(event);
+}
+```
+
+## Examples
+
+### Next.js Project (Auto-detect)
+
+The command will automatically detect your app directory:
+
+```bash
+better-auth-studio init
+```
+
+**Console Output:**
+```
+🚀 Initializing Better Auth Studio...
+
+🔍 Detected framework: nextjs
+✅ Created config: studio.config.ts
+📂 Auto-detected app directory: src/app
+✅ Generated route file: src/app/api/studio/[[...path]]/route.ts
+
+╔═══════════════════════════════════════════════════════════════╗
+║                    ✅ Next.js Setup Complete!                 ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  📁 Files created:                                            ║
+║     • studio.config.ts                                        ║
+║     • src/app/api/studio/[[...path]]/route.ts                ║
+║                                                               ║
+║  ⚠️  Important: Ensure better-auth-studio is in dependencies ║
+║     (not devDependencies) for production deployments          ║
+║                                                               ║
+║  🚀 Start your app:                                           ║
+║     pnpm dev                                                  ║
+║                                                               ║
+║  🌐 Dashboard will be at:                                     ║
+║     http://localhost:3000/api/studio                          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+### Next.js with Custom App Directory
+
+Specify a custom app directory location:
+
+```bash
+better-auth-studio init --api-dir "custom/app"
+```
+
+**Console Output:**
+```
+🚀 Initializing Better Auth Studio...
+
+🔍 Detected framework: nextjs
+✅ Created config: studio.config.ts
+📂 Using custom API directory: custom/app
+✅ Generated route file: custom/app/api/studio/[[...path]]/route.ts
+```
+
+### SvelteKit Project
+
+```bash
+better-auth-studio init
+```
+
+**Console Output:**
+```
+🚀 Initializing Better Auth Studio...
+
+🔍 Detected framework: sveltekit
+✅ Created config: studio.config.ts
+✅ Generated route file: src/routes/api/studio/[...path]/+server.ts
+
+╔═══════════════════════════════════════════════════════════════╗
+║                  ✅ SvelteKit Setup Complete!                ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  📁 Files created:                                            ║
+║     • studio.config.ts                                        ║
+║     • src/routes/api/studio/[...path]/+server.ts             ║
+║                                                               ║
+║  ⚠️  Important: Ensure better-auth-studio is in dependencies ║
+║     (not devDependencies) for production deployments          ║
+║                                                               ║
+║  🚀 Start your app:                                           ║
+║     pnpm dev                                                  ║
+║                                                               ║
+║  🌐 Dashboard will be at:                                     ║
+║     http://localhost:5173/api/studio                          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+### Express Project (Manual Setup)
+
+For Express and unknown frameworks, manual setup instructions are provided:
+
+```bash
+better-auth-studio init
+```
+
+**Console Output:**
+```
+🚀 Initializing Better Auth Studio...
+
+🔍 Detected framework: express
+✅ Created config: studio.config.ts
+
+╔═══════════════════════════════════════════════════════════════╗
+║              📝 Manual Setup Required for Express            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  📁 Created: studio.config.ts                                 ║
+║                                                               ║
+║  Add this to your server file:                                ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+
+import { betterAuthStudio } from 'better-auth-studio/express';
+import studioConfig from './studio.config';
+
+app.use('/api/studio', betterAuthStudio(studioConfig));
+
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  🚀 Start your app and visit:                                 ║
+║     http://localhost:3000/api/studio                          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+## Framework Detection
+
+The init command detects your framework by checking for:
+
+### Next.js
+- `next.config.js`, `next.config.mjs`, or `next.config.ts` files
+- `next` in package.json dependencies
+
+### SvelteKit
+- `svelte.config.js` or `svelte.config.ts` files
+- `src/routes` directory
+- `src/hooks.server.ts` file
+- `@sveltejs/kit` in package.json dependencies
+
+### Express
+- Server files: `src/index.ts`, `src/app.ts`, `src/server.ts`, `app.js`, `server.js`, `index.js`
+- `express` in package.json dependencies
+
+## Exit Codes
+
+| Code | Description |
+|------|-------------|
+| `0` | Initialization completed successfully |
+| `1` | Initialization failed (error during setup) |
+
+## Error Conditions
+
+### File Already Exists
+
+If `studio.config.ts` already exists:
+
+```bash
+⚠️  studio.config.ts already exists, skipping...
+```
+
+The command continues and creates/updates route files.
+
+### Route File Already Exists
+
+If the route handler file already exists:
+
+```bash
+⚠️  Route file already exists: app/api/studio/[[...path]]/route.ts
+```
+
+The existing file is not overwritten.
+
+### Unknown Framework
+
+If the framework cannot be detected:
+
+```bash
+🔍 Detected framework: unknown
+```
+
+Manual setup instructions are provided.
+
+## Installation Note
+
+<Warning>
+  For **production self-hosting**, install `better-auth-studio` as a **regular dependency**, not a devDependency:
+
+  ```bash
+  pnpm add better-auth-studio
+  ```
+
+  The package is required at runtime when self-hosting.
+</Warning>
+
+For CLI usage only (not self-hosting), you can install as a dev dependency:
+
+```bash
+pnpm add -D better-auth-studio
+```
+
+## Auth Import Paths
+
+The generated `studio.config.ts` uses framework-specific import paths:
+
+| Framework | Import Path |
+|-----------|-------------|
+| Next.js | `@/lib/auth` |
+| SvelteKit | `$lib/auth` |
+| Other | `./src/auth` |
+
+<Note>
+  Make sure to update the import path in `studio.config.ts` if your auth file is in a different location.
+</Note>
+
+## Related Commands
+
+- [`better-auth-studio start`](/api/cli/start) - Start the development server
+- [`better-auth-studio --version`](#) - Show CLI version
+
+## Next Steps
+
+After running `init`:
+
+1. **Review the generated config** - Update paths, metadata, and access controls in `studio.config.ts`
+2. **Install dependencies** - Ensure `better-auth-studio` is in your production dependencies
+3. **Start your app** - Run your framework's dev command (`pnpm dev`, `npm run dev`, etc.)
+4. **Access the dashboard** - Navigate to `http://localhost:PORT/api/studio`
+5. **Configure access control** - Set up role-based or email-based access restrictions
+
+See the [Self-Hosting Guide](/guides/self-hosting) for detailed configuration options.

@@ -1,0 +1,188 @@
+---
+title: Next.js Adapter
+description: API reference for the Next.js framework adapter
+---
+
+# Next.js Adapter
+
+Adapter for integrating Better Auth Studio with Next.js applications using App Router or Pages Router.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/nextjs';
+```
+
+## betterAuthStudio()
+
+Creates a Next.js-compatible request handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (request: Request) => Promise<Response>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(request: Request) => Promise<Response>">
+  An async function that handles Next.js Request objects and returns Response objects
+</ResponseField>
+
+## Usage
+
+### App Router (Recommended)
+
+Create a catch-all route handler:
+
+```typescript
+// app/api/studio/[...all]/route.ts
+import { betterAuthStudio } from 'better-auth-studio/nextjs';
+import { auth } from '@/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### Pages Router
+
+```typescript
+// pages/api/studio/[...all].ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { betterAuthStudio } from 'better-auth-studio/nextjs';
+import { auth } from '@/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio'
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export default async function studioHandler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  // Convert NextApiRequest to Request object
+  const request = new Request(
+    `${process.env.NEXTAUTH_URL}${req.url}`,
+    {
+      method: req.method || 'GET',
+      headers: req.headers as HeadersInit,
+      body: req.method !== 'GET' && req.method !== 'HEAD' 
+        ? JSON.stringify(req.body) 
+        : undefined
+    }
+  );
+  
+  const response = await handler(request);
+  
+  // Convert Response to NextApiResponse
+  const text = await response.text();
+  res.status(response.status);
+  response.headers.forEach((value, key) => {
+    res.setHeader(key, value);
+  });
+  res.send(text);
+}
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Next.js Request objects to the universal request format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search params
+  method: string;        // HTTP method
+  headers: Record<string, string>;
+  body?: any;            // Parsed JSON body for POST/PUT/PATCH
+};
+```
+
+### Next.js URL Handling
+
+The adapter handles Next.js-specific URL patterns:
+- Extracts pathname from `request.nextUrl` if available
+- Falls back to parsing `request.url`
+- Preserves query parameters
+
+### Error Handling
+
+All errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

@@ -1,0 +1,439 @@
+---
+title: Metadata
+description: Customize the appearance and branding of your Better Auth Studio instance
+---
+
+Metadata configuration allows you to customize the branding, theme, and features of your self-hosted Better Auth Studio instance.
+
+## Configuration
+
+Configure metadata in your `studio.config.ts`:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Admin Dashboard",
+    logo: "/logo.png",
+    favicon: "/favicon.ico",
+    theme: "dark",
+    company: {
+      name: "Acme Inc",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    colors: {
+      primary: "#3b82f6",
+      secondary: "#8b5cf6",
+      accent: "#10b981",
+    },
+    features: {
+      users: true,
+      sessions: true,
+      organizations: true,
+      analytics: true,
+      tools: true,
+      security: true,
+    },
+    links: [
+      { label: "Documentation", url: "https://docs.acme.com" },
+      { label: "Support", url: "https://support.acme.com" },
+    ],
+    custom: {
+      // Any custom metadata
+    },
+  },
+};
+
+export default config;
+```
+
+## Metadata Options
+
+### Basic Information
+
+<ParamField path="metadata.title" type="string">
+  The title displayed in the browser tab and header
+  
+  Default: `"Better Auth Studio"`
+  
+  ```typescript
+  metadata: {
+    title: "Admin Dashboard"
+  }
+  ```
+</ParamField>
+
+<ParamField path="metadata.logo" type="string">
+  URL or path to your logo image. Displayed in the sidebar and header.
+  
+  ```typescript
+  metadata: {
+    logo: "/images/company-logo.png"
+  }
+  ```
+</ParamField>
+
+<ParamField path="metadata.favicon" type="string">
+  URL or path to your favicon
+  
+  ```typescript
+  metadata: {
+    favicon: "/favicon.ico"
+  }
+  ```
+</ParamField>
+
+### Theme
+
+<ParamField path="metadata.theme" type="'dark' | 'light' | 'auto'">
+  The color theme for Studio
+  - `"dark"`: Dark mode
+  - `"light"`: Light mode
+  - `"auto"`: Match system preference
+  
+  Default: `"dark"`
+  
+  ```typescript
+  metadata: {
+    theme: "auto" // Respects user's system theme
+  }
+  ```
+</ParamField>
+
+### Company Information
+
+<ParamField path="metadata.company" type="object">
+  Company information displayed in the UI
+  
+  ```typescript
+  company: {
+    name: "Acme Inc",
+    website: "https://acme.com",
+    supportEmail: "support@acme.com",
+  }
+  ```
+</ParamField>
+
+<ParamField path="metadata.company.name" type="string">
+  Your company or product name
+</ParamField>
+
+<ParamField path="metadata.company.website" type="string">
+  Your company website URL
+</ParamField>
+
+<ParamField path="metadata.company.supportEmail" type="string">
+  Support email address for users to contact
+</ParamField>
+
+### Colors
+
+<ParamField path="metadata.colors" type="object">
+  Custom color scheme for Studio
+  
+  ```typescript
+  colors: {
+    primary: "#3b82f6",   // Blue
+    secondary: "#8b5cf6", // Purple
+    accent: "#10b981",    // Green
+  }
+  ```
+</ParamField>
+
+<ParamField path="metadata.colors.primary" type="string">
+  Primary brand color (hex format)
+</ParamField>
+
+<ParamField path="metadata.colors.secondary" type="string">
+  Secondary brand color (hex format)
+</ParamField>
+
+<ParamField path="metadata.colors.accent" type="string">
+  Accent color for highlights and CTAs (hex format)
+</ParamField>
+
+### Feature Toggles
+
+<ParamField path="metadata.features" type="object">
+  Enable or disable Studio features
+  
+  ```typescript
+  features: {
+    users: true,
+    sessions: true,
+    organizations: false, // Hide organizations if not using plugin
+    analytics: true,
+    tools: true,
+    security: true,
+  }
+  ```
+</ParamField>
+
+<ParamField path="metadata.features.users" type="boolean">
+  Show/hide the Users section
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="metadata.features.sessions" type="boolean">
+  Show/hide the Sessions section
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="metadata.features.organizations" type="boolean">
+  Show/hide the Organizations section
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="metadata.features.analytics" type="boolean">
+  Show/hide Analytics/Dashboard
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="metadata.features.tools" type="boolean">
+  Show/hide the Tools section
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="metadata.features.security" type="boolean">
+  Show/hide Security features
+  
+  Default: `true`
+</ParamField>
+
+### Custom Links
+
+<ParamField path="metadata.links" type="Array<{ label: string; url: string }>">
+  Custom navigation links displayed in the UI
+  
+  ```typescript
+  links: [
+    { label: "Documentation", url: "https://docs.example.com" },
+    { label: "API Reference", url: "https://api.example.com" },
+    { label: "Support", url: "https://support.example.com" },
+    { label: "Status", url: "https://status.example.com" },
+  ]
+  ```
+</ParamField>
+
+### Custom Data
+
+<ParamField path="metadata.custom" type="Record<string, any>">
+  Any custom metadata for your application
+  
+  ```typescript
+  custom: {
+    version: "2.0.0",
+    environment: "production",
+    region: "us-east-1",
+    customFeatureFlag: true,
+  }
+  ```
+</ParamField>
+
+## TypeScript Type Definition
+
+```typescript
+type StudioMetadata = {
+  title?: string;
+  logo?: string;
+  favicon?: string;
+  company?: {
+    name?: string;
+    website?: string;
+    supportEmail?: string;
+  };
+  theme?: "dark" | "light" | "auto";
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  features?: {
+    users?: boolean;
+    sessions?: boolean;
+    organizations?: boolean;
+    analytics?: boolean;
+    tools?: boolean;
+    security?: boolean;
+  };
+  links?: Array<{ label: string; url: string }>;
+  custom?: Record<string, any>;
+};
+```
+
+## Example Configurations
+
+### Minimal Branding
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Admin Panel",
+    theme: "dark",
+  },
+};
+```
+
+### Complete Customization
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Acme Admin Dashboard",
+    logo: "https://cdn.acme.com/logo.svg",
+    favicon: "https://cdn.acme.com/favicon.ico",
+    theme: "auto",
+    company: {
+      name: "Acme Corporation",
+      website: "https://acme.com",
+      supportEmail: "admin@acme.com",
+    },
+    colors: {
+      primary: "#1e40af",
+      secondary: "#7c3aed",
+      accent: "#059669",
+    },
+    features: {
+      users: true,
+      sessions: true,
+      organizations: true,
+      analytics: true,
+      tools: true,
+      security: true,
+    },
+    links: [
+      { label: "Main Site", url: "https://acme.com" },
+      { label: "Docs", url: "https://docs.acme.com" },
+      { label: "Support", url: "https://help.acme.com" },
+      { label: "Status", url: "https://status.acme.com" },
+    ],
+    custom: {
+      version: process.env.APP_VERSION,
+      deployedAt: new Date().toISOString(),
+      features: {
+        betaFeatures: true,
+      },
+    },
+  },
+};
+```
+
+### Feature-Specific Configuration
+
+Disable features you're not using:
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "User Management",
+    features: {
+      users: true,
+      sessions: true,
+      organizations: false, // Not using organization plugin
+      analytics: false,     // Disable analytics
+      tools: true,
+      security: true,
+    },
+  },
+};
+```
+
+## Asset Hosting
+
+### Local Assets
+
+Place assets in your `public` directory:
+
+```
+project/
+├── public/
+│   ├── logo.png
+│   ├── favicon.ico
+│   └── images/
+│       └── company-logo.svg
+└── studio.config.ts
+```
+
+```typescript studio.config.ts
+metadata: {
+  logo: "/logo.png",
+  favicon: "/favicon.ico",
+}
+```
+
+### CDN Assets
+
+```typescript studio.config.ts
+metadata: {
+  logo: "https://cdn.example.com/logo.svg",
+  favicon: "https://cdn.example.com/favicon.ico",
+}
+```
+
+## Environment-Based Configuration
+
+```typescript studio.config.ts
+const isDev = process.env.NODE_ENV === "development";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: isDev ? "Admin (Dev)" : "Admin Dashboard",
+    theme: isDev ? "light" : "dark",
+    company: {
+      name: process.env.COMPANY_NAME,
+      website: process.env.COMPANY_WEBSITE,
+      supportEmail: process.env.SUPPORT_EMAIL,
+    },
+    custom: {
+      environment: process.env.NODE_ENV,
+      version: process.env.APP_VERSION,
+    },
+  },
+};
+
+export default config;
+```
+
+## Best Practices
+
+<Note>
+**Branding Tips:**
+
+- Use SVG logos for crisp rendering at any size
+- Ensure logo has transparent background for theme compatibility
+- Test colors in both light and dark modes if using `theme: "auto"`
+- Keep custom links to 4-5 items for clean navigation
+- Use environment variables for environment-specific values
+</Note>
+
+## Accessibility
+
+When customizing colors, ensure:
+
+- Sufficient contrast ratios (WCAG AA: 4.5:1 for normal text)
+- Colors are distinguishable for color-blind users
+- Text remains readable on both light and dark backgrounds
+
+## Related
+
+- [Access Control](/configuration/access-control)
+- [Self-Hosting Setup](/self-hosting/setup)
+- [Event Ingestion](/configuration/event-ingestion)

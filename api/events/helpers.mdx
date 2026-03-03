@@ -1,0 +1,314 @@
+---
+title: Provider Helper Functions
+description: Built-in helper functions to create event ingestion providers
+---
+
+Better Auth Studio provides helper functions to create event ingestion providers for popular databases.
+
+## createPostgresProvider
+
+Create a PostgreSQL event ingestion provider. Supports pg, Prisma, and Drizzle clients.
+
+```typescript
+function createPostgresProvider(options: {
+  client: any;
+  tableName?: string;
+  schema?: string;
+  clientType?: "postgres" | "prisma" | "drizzle";
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="client" type="any" required>
+  The database client instance:
+  - **pg**: `Pool` or `Client` instance
+  - **Prisma**: `PrismaClient` instance
+  - **Drizzle**: Drizzle instance wrapping pg or postgres-js
+</ParamField>
+
+<ParamField path="tableName" type="string" default="auth_events">
+  Name of the table to store events
+</ParamField>
+
+<ParamField path="schema" type="string" default="public">
+  PostgreSQL schema name
+</ParamField>
+
+<ParamField path="clientType" type="'postgres' | 'prisma' | 'drizzle'">
+  Type of client being used. Auto-detected if not provided.
+</ParamField>
+
+### Examples
+
+<CodeGroup>
+```typescript pg (node-postgres)
+import { Pool } from "pg";
+import { createPostgresProvider } from "better-auth-studio";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const provider = createPostgresProvider({
+  client: pool,
+  tableName: "auth_events",
+  schema: "public",
+  clientType: "postgres",
+});
+```
+
+```typescript Prisma
+import { PrismaClient } from "@prisma/client";
+import { createPostgresProvider } from "better-auth-studio";
+
+const prisma = new PrismaClient();
+
+const provider = createPostgresProvider({
+  client: prisma,
+  tableName: "auth_events",
+  clientType: "prisma",
+});
+```
+
+```typescript Drizzle
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { createPostgresProvider } from "better-auth-studio";
+
+const client = postgres(process.env.DATABASE_URL!);
+const db = drizzle(client);
+
+const provider = createPostgresProvider({
+  client: db,
+  tableName: "auth_events",
+  clientType: "drizzle",
+});
+```
+</CodeGroup>
+
+## createSqliteProvider
+
+Create a SQLite event ingestion provider using better-sqlite3.
+
+```typescript
+function createSqliteProvider(options: {
+  client: any;
+  tableName?: string;
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="client" type="Database" required>
+  better-sqlite3 `Database` instance
+</ParamField>
+
+<ParamField path="tableName" type="string" default="auth_events">
+  Name of the table to store events
+</ParamField>
+
+### Example
+
+```typescript
+import Database from "better-sqlite3";
+import { createSqliteProvider } from "better-auth-studio";
+
+const db = new Database("./data.db");
+
+const provider = createSqliteProvider({
+  client: db,
+  tableName: "auth_events",
+});
+```
+
+## createNodeSqliteProvider
+
+Create a SQLite event ingestion provider using Node.js built-in SQLite (Node 22.5+).
+
+```typescript
+function createNodeSqliteProvider(options: {
+  client: any;
+  tableName?: string;
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="client" type="DatabaseSync" required>
+  node:sqlite `DatabaseSync` instance (requires Node.js 22.5+)
+</ParamField>
+
+<ParamField path="tableName" type="string" default="auth_events">
+  Name of the table to store events
+</ParamField>
+
+### Example
+
+```typescript
+import { DatabaseSync } from "node:sqlite";
+import { createNodeSqliteProvider } from "better-auth-studio";
+
+const db = new DatabaseSync(":memory:");
+// or
+// const db = new DatabaseSync("./data.db");
+
+const provider = createNodeSqliteProvider({
+  client: db,
+  tableName: "auth_events",
+});
+```
+
+## createClickHouseProvider
+
+Create a ClickHouse event ingestion provider for high-volume event storage.
+
+```typescript
+function createClickHouseProvider(options: {
+  client: any;
+  table?: string;
+  database?: string;
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="client" type="ClickHouseClient" required>
+  ClickHouse client instance (from `@clickhouse/client`)
+</ParamField>
+
+<ParamField path="table" type="string" default="auth_events">
+  Name of the table to store events
+</ParamField>
+
+<ParamField path="database" type="string">
+  ClickHouse database name. If provided, uses `database.table` format.
+</ParamField>
+
+### Example
+
+```typescript
+import { createClient } from "@clickhouse/client";
+import { createClickHouseProvider } from "better-auth-studio";
+
+const client = createClient({
+  host: process.env.CLICKHOUSE_HOST,
+  username: process.env.CLICKHOUSE_USER,
+  password: process.env.CLICKHOUSE_PASSWORD,
+});
+
+const provider = createClickHouseProvider({
+  client,
+  table: "auth_events",
+  database: "analytics",
+});
+```
+
+## createHttpProvider
+
+Create an HTTP event ingestion provider that sends events to a remote endpoint.
+
+```typescript
+function createHttpProvider(options: {
+  url: string;
+  client?: typeof fetch;
+  headers?: Record<string, string>;
+  transform?: (event: AuthEvent) => any;
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="url" type="string" required>
+  The HTTP endpoint URL to send events to
+</ParamField>
+
+<ParamField path="client" type="typeof fetch" default="fetch">
+  Custom fetch implementation (useful for adding interceptors)
+</ParamField>
+
+<ParamField path="headers" type="Record<string, string>">
+  Additional HTTP headers to include with requests
+</ParamField>
+
+<ParamField path="transform" type="(event: AuthEvent) => any">
+  Optional function to transform the event before sending
+</ParamField>
+
+### Example
+
+```typescript
+import { createHttpProvider } from "better-auth-studio";
+
+const provider = createHttpProvider({
+  url: "https://api.example.com/events",
+  headers: {
+    "Authorization": `Bearer ${process.env.API_KEY}`,
+    "X-Service": "better-auth",
+  },
+  transform: (event) => ({
+    // Transform to match your API's expected format
+    event_type: event.type,
+    timestamp: event.timestamp.toISOString(),
+    user_id: event.userId,
+    data: event.metadata,
+  }),
+});
+```
+
+## createStorageProvider
+
+Create a provider using Better Auth's storage adapter interface.
+
+```typescript
+function createStorageProvider(options: {
+  adapter: any;
+  tableName?: string;
+}): EventIngestionProvider
+```
+
+### Parameters
+
+<ParamField path="adapter" type="Adapter" required>
+  Better Auth storage adapter instance
+</ParamField>
+
+<ParamField path="tableName" type="string" default="auth_events">
+  Name of the table/collection to store events
+</ParamField>
+
+### Example
+
+```typescript
+import { createStorageProvider } from "better-auth-studio";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+const adapter = prismaAdapter(prisma);
+
+const provider = createStorageProvider({
+  adapter,
+  tableName: "auth_events",
+});
+```
+
+## Usage with defineStudioConfig
+
+All helper functions return an `EventIngestionProvider` that can be used with `defineStudioConfig`:
+
+```typescript
+import { defineStudioConfig, createPostgresProvider } from "better-auth-studio";
+import { Pool } from "pg";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+export const studioConfig = defineStudioConfig({
+  events: {
+    enabled: true,
+    provider: createPostgresProvider({ client: pool }),
+    batchSize: 100,
+    flushInterval: 5000,
+  },
+});
+```

@@ -1,0 +1,154 @@
+---
+title: StudioAccessConfig
+description: Access control configuration for Better Auth Studio
+---
+
+## Overview
+
+The `StudioAccessConfig` type controls who can access the Studio UI. You can restrict access by user roles, specific email addresses, configure session duration, and set a custom secret for authentication.
+
+## Type Definition
+
+```typescript
+export type StudioAccessConfig = {
+  roles?: string[];
+  allowEmails?: string[];
+  sessionDuration?: number;
+  secret?: string;
+};
+```
+
+## Fields
+
+<ParamField path="roles" type="string[]">
+  Array of user roles that are allowed to access Studio.
+  
+  Users must have one of these roles in their Better Auth user object to access the Studio UI.
+  
+  **Example:**
+  ```typescript
+  access: {
+    roles: ["admin", "super-admin"]
+  }
+  ```
+</ParamField>
+
+<ParamField path="allowEmails" type="string[]">
+  Array of specific email addresses that are allowed to access Studio.
+  
+  Users with these email addresses can access Studio regardless of their role.
+  
+  **Example:**
+  ```typescript
+  access: {
+    allowEmails: [
+      "admin@example.com",
+      "developer@example.com"
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="sessionDuration" type="number">
+  Duration of Studio authentication sessions in seconds.
+  
+  Controls how long users stay authenticated in Studio before needing to re-authenticate.
+  
+  **Example:**
+  ```typescript
+  access: {
+    sessionDuration: 3600 // 1 hour
+  }
+  ```
+</ParamField>
+
+<ParamField path="secret" type="string">
+  Custom secret for Studio authentication.
+  
+  Used to sign and verify Studio session tokens. If not provided, Studio will use a default secret.
+  
+  **Recommendation:** Provide a strong, unique secret in production environments.
+  
+  **Example:**
+  ```typescript
+  access: {
+    secret: process.env.STUDIO_SECRET
+  }
+  ```
+</ParamField>
+
+## Usage Examples
+
+### Restrict by Role
+
+```typescript
+import { defineStudioConfig } from "better-auth-studio";
+
+export const studioConfig = defineStudioConfig({
+  auth,
+  access: {
+    roles: ["admin"],
+  },
+});
+```
+
+### Allow Specific Emails
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  access: {
+    allowEmails: [
+      "admin@company.com",
+      "dev@company.com"
+    ],
+  },
+});
+```
+
+### Combined Access Control
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  access: {
+    roles: ["admin", "moderator"],
+    allowEmails: ["ceo@company.com"],
+    sessionDuration: 7200, // 2 hours
+    secret: process.env.STUDIO_SECRET,
+  },
+});
+```
+
+### Development vs Production
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  access: process.env.NODE_ENV === "production"
+    ? {
+        roles: ["admin"],
+        secret: process.env.STUDIO_SECRET,
+      }
+    : {
+        // More permissive in development
+        roles: ["admin", "developer"],
+      },
+});
+```
+
+## Security Considerations
+
+<Warning>
+  Always restrict Studio access in production environments. Studio provides administrative access to user data, sessions, and system configuration.
+</Warning>
+
+- **Use roles or allowEmails** to limit access to trusted users only
+- **Set a custom secret** in production using environment variables
+- **Keep sessionDuration reasonable** - shorter durations are more secure
+- **Avoid hardcoding secrets** - use environment variables instead
+
+## Related
+
+- [StudioConfig](/api/config/studio-config) - Main configuration object
+- [StudioMetadata](/api/config/metadata-config) - Customization and branding

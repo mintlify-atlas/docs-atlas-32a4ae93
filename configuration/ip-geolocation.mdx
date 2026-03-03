@@ -1,0 +1,306 @@
+---
+title: IP Geolocation
+description: Configure IP address geolocation for session tracking and events
+---
+
+Studio can resolve IP addresses to geographic locations for Sessions and Events pages. This helps you understand where your users are signing in from and detect suspicious activity.
+
+## Overview
+
+IP geolocation enriches session and event data with:
+
+- Country and country code
+- City
+- Region/state
+- Timezone information (provider-dependent)
+
+## Configuration
+
+Configure IP geolocation in your `studio.config.ts`:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lookup",
+  },
+};
+
+export default config;
+```
+
+## Providers
+
+### IPInfo.io
+
+IPInfo.io offers both free and paid tiers with different endpoints.
+
+#### Free Tier (Lite)
+
+The `lite` endpoint provides country and continent data only:
+
+```typescript
+ipAddress: {
+  provider: "ipinfo",
+  apiToken: process.env.IPINFO_TOKEN,
+  endpoint: "lite", // Free tier
+}
+```
+
+#### Paid Tier (Lookup)
+
+The `lookup` endpoint provides city, region, and full location data:
+
+```typescript
+ipAddress: {
+  provider: "ipinfo",
+  apiToken: process.env.IPINFO_TOKEN,
+  endpoint: "lookup", // Core/Plus tier
+}
+```
+
+<ParamField path="provider" type="string" required>
+  Set to `"ipinfo"` for IPInfo.io
+</ParamField>
+
+<ParamField path="apiToken" type="string">
+  Your IPInfo.io API token. Get one at [ipinfo.io](https://ipinfo.io)
+</ParamField>
+
+<ParamField path="endpoint" type="'lite' | 'lookup'">
+  - `"lite"`: Free tier - country/continent only
+  - `"lookup"`: Core/Plus tier - city/region data
+  
+  Default: `"lookup"`
+</ParamField>
+
+<ParamField path="baseUrl" type="string">
+  Custom base URL for IPInfo.io API
+  
+  Default: `"https://api.ipinfo.io"`
+</ParamField>
+
+### IPApi.co
+
+IPApi.co provides free and paid IP geolocation services:
+
+```typescript studio.config.ts
+ipAddress: {
+  provider: "ipapi",
+  apiToken: process.env.IPAPI_TOKEN, // Optional for free tier
+}
+```
+
+<ParamField path="provider" type="string" required>
+  Set to `"ipapi"` for IPApi.co
+</ParamField>
+
+<ParamField path="apiToken" type="string">
+  Your IPApi.co API token (optional for free tier with rate limits)
+</ParamField>
+
+<ParamField path="baseUrl" type="string">
+  Custom base URL for IPApi.co API
+  
+  Default: `"https://ipapi.co"`
+</ParamField>
+
+### Static (MaxMind GeoLite2)
+
+Use a local MaxMind GeoLite2 database file for offline IP resolution:
+
+```typescript studio.config.ts
+ipAddress: {
+  provider: "static",
+  path: "./data/GeoLite2-City.mmdb",
+}
+```
+
+<ParamField path="provider" type="string" required>
+  Set to `"static"` for MaxMind local database
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  Absolute or relative path to the `.mmdb` file
+  
+  Example: `"./data/GeoLite2-City.mmdb"`
+</ParamField>
+
+<Info>
+Download GeoLite2 database files from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data). You'll need to create a free account.
+</Info>
+
+## TypeScript Type Definition
+
+```typescript
+type StudioIpAddressConfig =
+  | {
+      provider: "ipinfo";
+      apiToken?: string;
+      baseUrl?: string;
+      /** "lite" (free, country/continent only) or "lookup" (core/plus, city/region). Default "lookup". */
+      endpoint?: "lite" | "lookup";
+    }
+  | {
+      provider: "ipapi";
+      apiToken?: string;
+      baseUrl?: string;
+    }
+  | {
+      /** Use a local MaxMind GeoLite2 (.mmdb) file; path is resolved from your project. */
+      provider: "static";
+      /** Absolute or relative path to the .mmdb file (e.g. "./data/GeoLite2-City.mmdb"). */
+      path: string;
+    };
+```
+
+## Fallback Behavior
+
+When IP geolocation is configured, Studio attempts resolution in this order:
+
+1. **Configured provider** (ipinfo or ipapi)
+2. **Local MaxMind database** (if available at `./data/GeoLite2-City.mmdb`)
+3. **Default geo database** (built-in JSON database)
+4. **Hardcoded IP ranges** (basic country detection)
+
+<Note>
+If the configured provider fails (network error, invalid token, rate limit), Studio automatically falls back to local databases to ensure the UI remains functional.
+</Note>
+
+## Environment Variables
+
+Store API tokens in environment variables:
+
+```bash .env
+# IPInfo.io
+IPINFO_TOKEN=your_ipinfo_token_here
+
+# IPApi.co
+IPAPI_TOKEN=your_ipapi_token_here
+```
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lookup",
+  },
+};
+```
+
+## Usage in Studio
+
+Once configured, IP geolocation data appears in:
+
+### Sessions Page
+
+View session locations with:
+- Country flag
+- City, Region
+- Country name
+- IP address
+
+### Events Page
+
+See where authentication events occurred:
+- Event type (login, signup, etc.)
+- User information
+- Geographic location
+- Timestamp
+
+## Performance Considerations
+
+<Warning>
+**API Rate Limits:**
+
+- IPInfo.io free tier: 50,000 requests/month
+- IPApi.co free tier: 1,000 requests/day
+- Consider using static/MaxMind for high-traffic applications
+</Warning>
+
+### Optimization Tips
+
+1. **Use static provider** for high-volume applications
+2. **Cache results** (Studio handles this internally)
+3. **Choose appropriate tier** based on your traffic
+4. **Monitor usage** to avoid rate limit errors
+
+## Example Configurations
+
+### Development (Free)
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lite", // Free tier
+  },
+};
+```
+
+### Production (Paid)
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "ipinfo",
+    apiToken: process.env.IPINFO_TOKEN,
+    endpoint: "lookup", // Paid tier with city data
+  },
+};
+```
+
+### Self-Hosted (MaxMind)
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  ipAddress: {
+    provider: "static",
+    path: "./data/GeoLite2-City.mmdb",
+  },
+};
+```
+
+## Troubleshooting
+
+### No Location Data Showing
+
+1. Verify your API token is valid
+2. Check for rate limit errors in server logs
+3. Ensure the provider endpoint is correct
+4. Test the API token with a direct request
+
+### Invalid IP Addresses
+
+- Localhost IPs (127.0.0.1, ::1) cannot be resolved
+- Private network IPs (192.168.x.x, 10.x.x.x) are not supported
+- Ensure your application captures real client IPs
+
+### MaxMind Database Issues
+
+- Verify the `.mmdb` file path is correct
+- Ensure the file is not corrupted
+- Download the latest version from MaxMind
+- Check file permissions
+
+## Related
+
+- [Event Ingestion](/configuration/event-ingestion)
+- [Self-Hosting Configuration](/self-hosting/configuration)
+- [Sessions Management](/features/sessions)

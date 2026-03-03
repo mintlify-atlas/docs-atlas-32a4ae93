@@ -1,0 +1,432 @@
+---
+title: 'Organization Management'
+description: 'Manage organizations, teams, members, and invitations in Better Auth Studio'
+icon: 'building'
+---
+
+## Overview
+
+The Organization Management section allows you to create and manage multi-tenant organizations in your Better Auth application. Handle organization structures, team hierarchies, member roles, and invitations all from one interface.
+
+<Warning>
+Organization features require the `organization` plugin from Better Auth. See [Setup](#setup) below.
+</Warning>
+
+## Setup
+
+Before using organization management, enable the organization plugin in your Better Auth configuration:
+
+```typescript
+import { betterAuth } from 'better-auth';
+import { organization } from 'better-auth/plugins';
+
+export const auth = betterAuth({
+  // ... your existing configuration
+  plugins: [
+    organization()
+  ]
+});
+```
+
+<Steps>
+  <Step title="Import the plugin">
+    Add `organization` from `better-auth/plugins`
+  </Step>
+
+  <Step title="Add to plugins array">
+    Include `organization()` in your auth configuration
+  </Step>
+
+  <Step title="Run migrations">
+    Execute database migrations to create organization tables:
+    ```bash
+    # Prisma
+    npx prisma migrate dev
+    
+    # Drizzle
+    npx drizzle-kit push
+    ```
+  </Step>
+
+  <Step title="Restart your application">
+    Restart to apply the changes
+  </Step>
+</Steps>
+
+## Accessing Organizations
+
+Navigate to **Organizations** from the main sidebar. If the plugin is not enabled, you'll see setup instructions.
+
+## Key Features
+
+### Organization List View
+
+The organizations page displays:
+
+- **Total organization count** - Live count of all organizations
+- **Organization cards/table** - Name, slug, and creation date
+- **Search functionality** - Find organizations by name or slug
+- **Pagination** - 20 organizations per page
+- **Sorting** - Sort by creation date (newest/oldest)
+
+### Organization Details
+
+Each organization shows:
+
+- **Organization Name** - Display name
+- **Slug** - URL-friendly identifier
+- **Organization ID** - Unique identifier (copyable)
+- **Member Count** - Total members in the organization
+- **Team Count** - Number of teams within the organization
+- **Invitation Count** - Pending invitations
+- **Created/Updated Dates** - Timestamps
+
+### Organization Actions
+
+<CardGroup cols={2}>
+  <Card title="View Organization" icon="eye">
+    See detailed information:
+    - Full organization profile
+    - Member list with roles
+    - Teams and team members
+    - Pending invitations
+    - Organization metadata
+  </Card>
+
+  <Card title="Edit Organization" icon="pen">
+    Update organization details:
+    - Change organization name
+    - Modify slug (auto-generated from name)
+    - Update metadata
+  </Card>
+
+  <Card title="Delete Organization" icon="trash">
+    Remove an organization:
+    - Confirmation modal required
+    - Deletes all teams and memberships
+    - Cannot be undone
+  </Card>
+
+  <Card title="Manage Teams" icon="users-rectangle">
+    Navigate to organization teams:
+    - Create new teams
+    - View team members
+    - Assign team roles
+  </Card>
+</CardGroup>
+
+## Organization Workflows
+
+<Steps>
+  <Step title="Create an Organization">
+    1. Click **Add Organization** button
+    2. Enter organization details:
+       - **Name** (required) - e.g., "Acme Corp"
+       - **Slug** (auto-generated) - e.g., "acme-corp"
+    3. Slug is automatically created from name:
+       - Lowercase conversion
+       - Spaces become hyphens
+       - Special characters removed
+    4. Click **Create** to add organization
+  </Step>
+
+  <Step title="Edit Organization">
+    1. Find organization in list
+    2. Click Edit icon (pencil) in actions column
+    3. Update name or slug:
+       - Changing name auto-updates slug
+       - You can manually override the slug
+    4. Click **Update** to save
+  </Step>
+
+  <Step title="View Organization Members">
+    1. Click View icon (eye) on an organization
+    2. See member statistics:
+       - Total members
+       - Active teams
+       - Pending invitations
+    3. Navigate to detailed member list if needed
+  </Step>
+
+  <Step title="Delete Organization">
+    1. Click Delete icon (trash) on organization
+    2. Review warning about cascading deletion
+    3. Confirm deletion
+    4. Organization, teams, and memberships are removed
+  </Step>
+</Steps>
+
+## Search and Filters
+
+### Search
+
+Search organizations by:
+- Organization name (partial match)
+- Slug (partial match)
+
+<Note>
+Search is case-insensitive and matches anywhere in the name or slug.
+</Note>
+
+### Filters
+
+Available filters:
+
+<Accordion title="Created Date Filter">
+- Filter by creation date range
+- Use calendar picker to select:
+  - **From date** - Start of range
+  - **To date** - End of range
+- Shows organizations created within the range
+</Accordion>
+
+## Bulk Operations
+
+### Seed Organizations
+
+Quickly create test organizations for development:
+
+<Steps>
+  <Step title="Open Seed Modal">
+    Click **Seed** button in the toolbar
+  </Step>
+
+  <Step title="Configure Seeding">
+    - Enter number of organizations (1-100)
+    - Organizations get auto-generated names and slugs
+  </Step>
+
+  <Step title="Monitor Progress">
+    - Real-time terminal shows creation progress
+    - Success count displayed
+    - Any errors are shown
+  </Step>
+</Steps>
+
+<Warning>
+Seeding creates real organizations in your database. Use only in development.
+</Warning>
+
+### Export Organizations
+
+Export organization data to CSV:
+
+1. Click **Export CSV** button
+2. Downloads file with columns:
+   - Organization ID
+   - Name
+   - Slug
+   - Created At
+3. Filename includes current date: `organizations-export-2024-01-15.csv`
+
+## Organization Details Modal
+
+Click **View** on any organization to see:
+
+<Accordion title="Overview Tab">
+- Organization name and slug
+- Copyable organization ID
+- Creation and update timestamps
+- Organization metadata (if configured)
+</Accordion>
+
+<Accordion title="Members Tab">
+View all organization members:
+- Member name and email
+- Role within organization
+- Join date
+- Member actions (add/remove)
+</Accordion>
+
+<Accordion title="Teams Tab">
+Manage organization teams:
+- Team list with member counts
+- Create new teams
+- Navigate to team details
+- Assign team administrators
+</Accordion>
+
+<Accordion title="Invitations Tab">
+Pending invitations:
+- Invited email addresses
+- Invitation status
+- Role being offered
+- Invitation date
+- Actions: Resend or Cancel
+</Accordion>
+
+## Slug Generation
+
+Slugs are automatically generated from organization names:
+
+```typescript
+// Examples of slug generation:
+"Acme Corporation" → "acme-corporation"
+"My Company Ltd." → "my-company-ltd"
+"Tech@Startup" → "techstartup"
+"  Spaces  " → "spaces"
+```
+
+**Rules:**
+- Convert to lowercase
+- Replace spaces with hyphens
+- Remove special characters
+- Remove multiple consecutive hyphens
+- Trim leading/trailing hyphens
+
+<Info>
+You can manually edit the slug after it's auto-generated, but it must remain URL-safe.
+</Info>
+
+## Team Management
+
+Within each organization, you can manage teams:
+
+### Create Teams
+
+<Steps>
+  <Step title="Navigate to Organization">
+    Click into an organization's detail view
+  </Step>
+
+  <Step title="Go to Teams Tab">
+    Select the Teams tab in the organization modal
+  </Step>
+
+  <Step title="Add Team">
+    Click **Create Team** button and provide:
+    - Team name
+    - Team slug (auto-generated)
+    - Initial members (optional)
+  </Step>
+</Steps>
+
+### Team Roles
+
+Each team member can have:
+- **Owner** - Full team control
+- **Admin** - Manage members and settings
+- **Member** - Standard access
+
+## Member Management
+
+### Add Members to Organization
+
+<Steps>
+  <Step title="Open Organization">
+    View the organization details
+  </Step>
+
+  <Step title="Members Tab">
+    Navigate to the Members section
+  </Step>
+
+  <Step title="Add Member">
+    Click **Add Member** and:
+    - Enter user email or select from existing users
+    - Assign organization role
+    - Send invitation if user doesn't exist
+  </Step>
+</Steps>
+
+### Remove Members
+
+1. Find member in organization member list
+2. Click Remove icon
+3. Confirm removal
+4. Member loses access to organization and all teams
+
+## Invitations
+
+Manage pending organization invitations:
+
+### Create Invitation
+
+<Steps>
+  <Step title="Navigate to Invitations">
+    Open organization → Invitations tab
+  </Step>
+
+  <Step title="Invite User">
+    Click **Invite Member** and provide:
+    - Email address
+    - Role to assign
+    - Optional custom message
+  </Step>
+
+  <Step title="Send Invitation">
+    Invitation is created and sent (if email configured)
+  </Step>
+</Steps>
+
+### Manage Invitations
+
+- **Resend** - Send invitation email again
+- **Cancel** - Revoke pending invitation
+- **View Status** - See if invitation was accepted/rejected
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Descriptive Names">
+    Choose clear organization names that reflect the actual business or team
+  </Step>
+
+  <Step title="Plan Team Structure">
+    Design your team hierarchy before creating organizations:
+    - Department-based teams
+    - Project-based teams
+    - Role-based teams
+  </Step>
+
+  <Step title="Manage Roles Carefully">
+    Assign appropriate roles:
+    - Limit Owner access
+    - Use Admin for department leads
+    - Member for individual contributors
+  </Step>
+
+  <Step title="Regular Audits">
+    Periodically review:
+    - Active members
+    - Pending invitations
+    - Unused organizations
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Organizations page shows setup instructions">
+The organization plugin is not enabled. Follow these steps:
+
+1. Add organization plugin to auth config
+2. Run database migrations
+3. Restart your application
+4. Refresh the Studio page
+</Accordion>
+
+<Accordion title="Cannot create organization with existing slug">
+- Slugs must be unique across all organizations
+- Try modifying the slug manually
+- Or change the organization name to generate a different slug
+</Accordion>
+
+<Accordion title="Members not showing in organization">
+- Verify the user is actually a member (check database)
+- Ensure organization plugin is properly configured
+- Check for errors in the browser console
+</Accordion>
+
+## API Reference
+
+Organization operations use these endpoints:
+
+- `GET /api/organizations` - List organizations
+- `POST /api/organizations` - Create organization
+- `GET /api/organizations/:id` - Get organization details
+- `PUT /api/organizations/:id` - Update organization
+- `DELETE /api/organizations/:id` - Delete organization
+- `GET /api/organizations/:id/members` - Get members
+- `GET /api/organizations/:id/teams` - Get teams
+- `GET /api/organizations/:id/invitations` - Get invitations
+- `POST /api/seed/organizations` - Seed test data

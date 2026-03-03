@@ -1,0 +1,344 @@
+---
+title: Event Ingestion
+description: Core event ingestion utilities for managing authentication events
+---
+
+## initializeEventIngestion
+
+Initializes the event ingestion system with the specified configuration. This sets up the event provider, batching, and flush intervals.
+
+### Signature
+
+```typescript
+function initializeEventIngestion(
+  eventsConfig: StudioConfig["events"]
+): void
+```
+
+### Parameters
+
+<ParamField path="eventsConfig" type="StudioConfig['events']" required>
+  Configuration object for event ingestion
+  
+  <Expandable title="properties">
+    <ParamField path="enabled" type="boolean" required>
+      Whether event ingestion is enabled
+    </ParamField>
+    
+    <ParamField path="provider" type="EventIngestionProvider">
+      Custom event provider implementation
+    </ParamField>
+    
+    <ParamField path="client" type="any">
+      Database client instance
+    </ParamField>
+    
+    <ParamField path="clientType" type="'postgres' | 'prisma' | 'drizzle' | 'clickhouse' | 'https' | 'sqlite' | 'node-sqlite'">
+      Type of database client
+    </ParamField>
+    
+    <ParamField path="tableName" type="string">
+      Table name for storing events
+    </ParamField>
+    
+    <ParamField path="batchSize" type="number" default="1">
+      Events to batch before flushing
+    </ParamField>
+    
+    <ParamField path="flushInterval" type="number" default="5000">
+      Flush interval in milliseconds
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Usage Example
+
+```typescript
+import { initializeEventIngestion, createPostgresProvider } from "better-auth-studio";
+import { pool } from "./db";
+
+initializeEventIngestion({
+  enabled: true,
+  client: pool,
+  clientType: "postgres",
+  tableName: "auth_events",
+  batchSize: 20,
+  flushInterval: 3000
+});
+```
+
+### Notes
+
+- Can only be initialized once. Subsequent calls are ignored if already initialized
+- Automatically creates the appropriate provider based on `clientType`
+- Sets up periodic event flushing when `batchSize > 1`
+
+---
+
+## emitEvent
+
+Emits an authentication event to the configured ingestion provider. Events can be sent immediately or batched depending on configuration.
+
+### Signature
+
+```typescript
+async function emitEvent(
+  type: AuthEventType,
+  data: {
+    status: "success" | "failed";
+    userId?: string;
+    sessionId?: string;
+    organizationId?: string;
+    metadata?: Record<string, any>;
+    request?: { 
+      headers: Record<string, string>; 
+      ip?: string 
+    };
+  },
+  eventsConfig?: StudioConfig["events"]
+): Promise<void>
+```
+
+### Parameters
+
+<ParamField path="type" type="AuthEventType" required>
+  The type of authentication event (e.g., `"user.joined"`, `"user.logged_in"`, `"oauth.linked"`)
+</ParamField>
+
+<ParamField path="data" type="object" required>
+  Event data payload
+  
+  <Expandable title="properties">
+    <ParamField path="status" type="'success' | 'failed'" required>
+      Whether the event represents a successful or failed operation
+    </ParamField>
+    
+    <ParamField path="userId" type="string">
+      ID of the user associated with this event
+    </ParamField>
+    
+    <ParamField path="sessionId" type="string">
+      ID of the session associated with this event
+    </ParamField>
+    
+    <ParamField path="organizationId" type="string">
+      ID of the organization associated with this event
+    </ParamField>
+    
+    <ParamField path="metadata" type="Record<string, any>">
+      Additional metadata specific to the event type (e.g., email, name, provider)
+    </ParamField>
+    
+    <ParamField path="request" type="object">
+      Request context information
+      
+      <Expandable title="properties">
+        <ParamField path="headers" type="Record<string, string>" required>
+          HTTP headers from the request
+        </ParamField>
+        
+        <ParamField path="ip" type="string">
+          IP address of the client
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="eventsConfig" type="StudioConfig['events']">
+  Optional events configuration. If provided and ingestion is not initialized, it will be initialized with this config
+</ParamField>
+
+### Usage Example
+
+```typescript
+import { emitEvent } from "better-auth-studio";
+
+// Emit a successful login event
+await emitEvent("user.logged_in", {
+  status: "success",
+  userId: "user_123",
+  sessionId: "session_456",
+  metadata: {
+    email: "user@example.com",
+    name: "John Doe"
+  },
+  request: {
+    headers: { "user-agent": "Mozilla/5.0..." },
+    ip: "192.168.1.1"
+  }
+});
+
+// Emit a failed login attempt
+await emitEvent("user.logged_in", {
+  status: "failed",
+  metadata: {
+    email: "user@example.com",
+    reason: "Invalid credentials"
+  },
+  request: {
+    headers: { "user-agent": "Mozilla/5.0..." },
+    ip: "192.168.1.1"
+  }
+});
+```
+
+### Event Filtering
+
+Events can be filtered using `include` and `exclude` configuration:
+
+```typescript
+// Only track specific events
+await emitEvent("user.joined", data, {
+  enabled: true,
+  include: ["user.joined", "user.logged_in"],
+  // ... other config
+});
+
+// Exclude certain events
+await emitEvent("session.created", data, {
+  enabled: true,
+  exclude: ["session.created"],
+  // ... other config
+});
+```
+
+---
+
+## getEventIngestionProvider
+
+Returns the currently active event ingestion provider, or `null` if not initialized.
+
+### Signature
+
+```typescript
+function getEventIngestionProvider(): EventIngestionProvider | null
+```
+
+### Returns
+
+<ResponseField name="provider" type="EventIngestionProvider | null">
+  The active event ingestion provider instance, or `null` if not initialized
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { getEventIngestionProvider } from "better-auth-studio";
+
+const provider = getEventIngestionProvider();
+
+if (provider) {
+  // Query recent events
+  const result = await provider.query?.({
+    limit: 100,
+    sort: "desc"
+  });
+  
+  console.log("Recent events:", result?.events);
+}
+```
+
+---
+
+## checkEventIngestionHealth
+
+Checks the health status of the event ingestion system.
+
+### Signature
+
+```typescript
+async function checkEventIngestionHealth(): Promise<boolean>
+```
+
+### Returns
+
+<ResponseField name="healthy" type="boolean">
+  `true` if the event ingestion system is healthy and operational, `false` otherwise
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { checkEventIngestionHealth } from "better-auth-studio";
+
+const isHealthy = await checkEventIngestionHealth();
+
+if (!isHealthy) {
+  console.error("Event ingestion system is unhealthy!");
+}
+```
+
+### Notes
+
+- Returns `false` if no provider is initialized
+- If the provider implements a custom `healthCheck()` method, it will be called
+- Otherwise, returns `true` if a provider is initialized
+
+---
+
+## shutdownEventIngestion
+
+Gracefully shuts down the event ingestion system, flushing any pending events and cleaning up resources.
+
+### Signature
+
+```typescript
+async function shutdownEventIngestion(): Promise<void>
+```
+
+### Usage Example
+
+```typescript
+import { shutdownEventIngestion } from "better-auth-studio";
+
+// During application shutdown
+process.on("SIGTERM", async () => {
+  console.log("Shutting down event ingestion...");
+  await shutdownEventIngestion();
+  process.exit(0);
+});
+```
+
+### Behavior
+
+1. Sets a shutdown flag to prevent new events from being queued
+2. Clears any active flush timers
+3. Flushes all pending events in the queue
+4. Calls the provider's `shutdown()` method if implemented
+5. Resets all internal state (provider, config, queue, initialized flag)
+
+### Notes
+
+- Always call this during application shutdown to prevent data loss
+- Waits for all pending events to be flushed before completing
+- Safe to call even if not initialized
+
+---
+
+## Additional Exports
+
+### isEventIngestionInitialized
+
+Checks whether the event ingestion system has been initialized.
+
+```typescript
+function isEventIngestionInitialized(): boolean
+```
+
+### getEventQueueSize
+
+Returns the current number of events in the queue waiting to be flushed.
+
+```typescript
+function getEventQueueSize(): number
+```
+
+**Usage:**
+
+```typescript
+import { getEventQueueSize } from "better-auth-studio";
+
+const queueSize = getEventQueueSize();
+console.log(`${queueSize} events pending`);
+```

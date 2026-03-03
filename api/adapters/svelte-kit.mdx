@@ -1,0 +1,233 @@
+---
+title: SvelteKit Adapter
+description: API reference for the SvelteKit framework adapter
+---
+
+# SvelteKit Adapter
+
+Adapter for integrating Better Auth Studio with SvelteKit applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/svelte-kit';
+```
+
+## betterAuthStudio()
+
+Creates a SvelteKit-compatible request handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (event: RequestEvent) => Promise<Response>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(event: RequestEvent) => Promise<Response>">
+  An async function that accepts a SvelteKit RequestEvent and returns a Response
+</ResponseField>
+
+## Usage
+
+### Catch-all Route Handler
+
+Create a catch-all route to handle all studio requests:
+
+```typescript
+// src/routes/api/studio/[...path]/+server.ts
+import { betterAuthStudio } from 'better-auth-studio/svelte-kit';
+import { auth } from '$lib/server/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+import type { RequestEvent } from '@sveltejs/kit';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export async function GET(event: RequestEvent) {
+  return handler(event);
+}
+
+export async function POST(event: RequestEvent) {
+  return handler(event);
+}
+
+export async function PUT(event: RequestEvent) {
+  return handler(event);
+}
+
+export async function DELETE(event: RequestEvent) {
+  return handler(event);
+}
+
+export async function PATCH(event: RequestEvent) {
+  return handler(event);
+}
+```
+
+### Simplified Version
+
+```typescript
+// src/routes/api/studio/[...path]/+server.ts
+import { betterAuthStudio } from 'better-auth-studio/svelte-kit';
+import { auth } from '$lib/server/auth';
+
+const handler = betterAuthStudio({ auth });
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### With Access Control
+
+```typescript
+// src/routes/api/studio/[...path]/+server.ts
+import { betterAuthStudio } from 'better-auth-studio/svelte-kit';
+import { auth } from '$lib/server/auth';
+
+const handler = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com']
+  }
+});
+
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts SvelteKit RequestEvent to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // event.request.method
+  headers: Record<string, string>; // event.request.headers
+  body?: any;            // Parsed from event.request
+};
+```
+
+### Base Path Handling
+
+The adapter automatically strips the base path from the URL:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Content Type Handling
+
+The adapter handles multiple content types:
+- `application/json` → `event.request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## SvelteKit Configuration
+
+### TypeScript Types
+
+The adapter uses `@ts-expect-error` for SvelteKit imports to ensure compatibility when types are not available:
+
+```typescript
+// @ts-expect-error - SvelteKit types may not be available
+import type { RequestEvent } from '@sveltejs/kit';
+```
+
+### File Structure
+
+```
+src/
+├── routes/
+│   └── api/
+│       └── studio/
+│           └── [...path]/
+│               └── +server.ts
+└── lib/
+    └── server/
+        └── auth.ts
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

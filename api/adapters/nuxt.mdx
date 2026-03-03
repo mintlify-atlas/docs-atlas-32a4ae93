@@ -1,0 +1,251 @@
+---
+title: Nuxt Adapter
+description: API reference for the Nuxt framework adapter
+---
+
+# Nuxt Adapter
+
+Adapter for integrating Better Auth Studio with Nuxt 3 applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/nuxt';
+```
+
+## betterAuthStudio()
+
+Creates a Nuxt-compatible event handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (event: any) => Promise<Response | any>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(event: any) => Promise<Response | any>">
+  An async event handler compatible with Nuxt's h3 server
+</ResponseField>
+
+## Usage
+
+### Server API Route
+
+Create a catch-all server route:
+
+```typescript
+// server/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/nuxt';
+import { auth } from '~/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+export default defineEventHandler(betterAuthStudio(studioConfig));
+```
+
+### Simplified Version
+
+```typescript
+// server/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/nuxt';
+import { auth } from '~/lib/auth';
+
+export default defineEventHandler(betterAuthStudio({ auth }));
+```
+
+### With Access Control
+
+```typescript
+// server/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/nuxt';
+import { auth } from '~/lib/auth';
+
+export default defineEventHandler(
+  betterAuthStudio({
+    auth,
+    access: {
+      roles: ['admin'],
+      allowEmails: ['admin@example.com']
+    }
+  })
+);
+```
+
+### With Custom Middleware
+
+```typescript
+// server/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/nuxt';
+import { auth } from '~/lib/auth';
+
+const studioHandler = betterAuthStudio({ auth });
+
+export default defineEventHandler(async (event) => {
+  // Custom middleware logic
+  console.log(`Studio request: ${event.method}`);
+  
+  // Call studio handler
+  const response = await studioHandler(event);
+  
+  console.log('Studio request completed');
+  return response;
+});
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Nuxt/h3 event objects to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // event.method
+  headers: Record<string, string>; // event.headers
+  body?: any;            // Read using readBody() if available
+};
+```
+
+### Body Reading
+
+The adapter attempts to read the request body using:
+1. `event.body` (if already parsed)
+2. `readBody(event)` (Nuxt auto-imported utility)
+
+<Note>
+  The adapter safely accesses `readBody` from `globalThis`. Ensure Nuxt auto-imports are enabled for h3 utilities.
+</Note>
+
+### Base Path Handling
+
+The adapter automatically strips the base path from URLs:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Client Disconnection Handling
+
+The adapter gracefully handles client disconnections:
+
+```typescript
+// Returns status 499 for client disconnection errors
+if (error?.code === 'EPIPE' || 
+    error?.code === 'ECONNRESET' || 
+    error?.message?.includes('aborted')) {
+  return new Response(null, { status: 499 });
+}
+```
+
+### URL Construction
+
+The adapter constructs URLs from Nuxt event objects:
+
+```typescript
+function getRequestURL(event: any): URL {
+  const protocol = event.node.req.socket?.encrypted ? 'https' : 'http';
+  const host = event.headers.host || event.headers[':authority'] || 'localhost';
+  const path = event.node.req.url || '/';
+  return new URL(path, `${protocol}://${host}`);
+}
+```
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## Nuxt Configuration
+
+### File Structure
+
+```
+project/
+├── server/
+│   └── api/
+│       └── studio/
+│           └── [...all].ts
+├── lib/
+│   └── auth.ts
+└── nuxt.config.ts
+```
+
+### Auto-imports
+
+Ensure h3 auto-imports are enabled in `nuxt.config.ts`:
+
+```typescript
+export default defineNuxtConfig({
+  // h3 utilities are auto-imported by default
+});
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

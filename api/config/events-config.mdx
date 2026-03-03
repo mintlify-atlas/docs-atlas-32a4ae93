@@ -1,0 +1,479 @@
+---
+title: Events Configuration
+description: Events tracking and ingestion configuration for Better Auth Studio
+---
+
+## Overview
+
+The `events` field in `StudioConfig` controls how authentication events are captured, stored, and displayed. Events provide visibility into user actions like sign-ups, logins, password changes, and more.
+
+## Type Definition
+
+```typescript
+events?: {
+  enabled?: boolean;
+  tableName?: string;
+  provider?: EventIngestionProvider;
+  client?: any;
+  clientType?: "postgres" | "prisma" | "drizzle" | "clickhouse" | "https" | "custom" | "sqlite" | "node-sqlite";
+  include?: AuthEventType[];
+  exclude?: AuthEventType[];
+  batchSize?: number;
+  flushInterval?: number;
+  retryOnError?: boolean;
+  liveMarquee?: LiveMarqueeConfig;
+  onEventIngest?: (event: AuthEvent) => void | Promise<void>;
+}
+```
+
+## Fields
+
+<ParamField path="enabled" type="boolean">
+  Enable or disable event tracking.
+  
+  **Default:** `false`
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true
+  }
+  ```
+</ParamField>
+
+<ParamField path="tableName" type="string">
+  Name of the database table to store events. When provided, Studio will automatically use your Better Auth adapter.
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    tableName: "auth_events"
+  }
+  ```
+</ParamField>
+
+<ParamField path="provider" type="EventIngestionProvider">
+  Custom event ingestion provider. Implement this interface for custom event storage backends.
+  
+  <Expandable title="EventIngestionProvider interface">
+    ```typescript
+    export interface EventIngestionProvider {
+      ingest(event: AuthEvent): Promise<void>;
+      ingestBatch?(events: AuthEvent[]): Promise<void>;
+      query?(options: EventQueryOptions): Promise<EventQueryResult>;
+      count?(): Promise<number>;
+      getStats?(): Promise<EventStats>;
+      healthCheck?(): Promise<boolean>;
+      shutdown?(): Promise<void>;
+    }
+    ```
+  </Expandable>
+</ParamField>
+
+<ParamField path="client" type="any">
+  Database client instance (Postgres pool, Prisma client, Drizzle instance, ClickHouse client, etc.).
+  
+  Used when you want Studio to manage event storage using your existing database connection.
+</ParamField>
+
+<ParamField path="clientType" type="string">
+  Type of database client being used.
+  
+  **Options:**
+  - `"postgres"` - PostgreSQL client
+  - `"prisma"` - Prisma client
+  - `"drizzle"` - Drizzle ORM
+  - `"clickhouse"` - ClickHouse client
+  - `"sqlite"` - SQLite
+  - `"node-sqlite"` - Node SQLite
+  - `"https"` - HTTP/HTTPS endpoint
+  - `"custom"` - Custom client
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    client: prisma,
+    clientType: "prisma"
+  }
+  ```
+</ParamField>
+
+<ParamField path="include" type="AuthEventType[]">
+  Whitelist of event types to track. Only these events will be captured.
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    include: [
+      "user.joined",
+      "user.logged_in",
+      "user.logged_out"
+    ]
+  }
+  ```
+  
+  See [Event Types](#event-types) for the complete list.
+</ParamField>
+
+<ParamField path="exclude" type="AuthEventType[]">
+  Blacklist of event types to ignore. All events except these will be captured.
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    exclude: [
+      "session.created",
+      "user.updated"
+    ]
+  }
+  ```
+  
+  See [Event Types](#event-types) for the complete list.
+</ParamField>
+
+<ParamField path="batchSize" type="number">
+  Number of events to batch before flushing to storage.
+  
+  **Default:** `10`
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    batchSize: 50 // Flush every 50 events
+  }
+  ```
+</ParamField>
+
+<ParamField path="flushInterval" type="number">
+  Time interval (in milliseconds) to automatically flush events to storage.
+  
+  **Default:** `5000` (5 seconds)
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    flushInterval: 10000 // Flush every 10 seconds
+  }
+  ```
+</ParamField>
+
+<ParamField path="retryOnError" type="boolean">
+  Whether to retry event ingestion on failure.
+  
+  **Default:** `true`
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    retryOnError: false
+  }
+  ```
+</ParamField>
+
+<ParamField path="liveMarquee" type="LiveMarqueeConfig">
+  Configuration for the live events marquee display in the Studio UI.
+  
+  <Expandable title="LiveMarqueeConfig fields">
+    <ResponseField name="enabled" type="boolean">
+      Enable/disable the live marquee.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="pollInterval" type="number">
+      Polling interval in milliseconds.
+      
+      **Default:** `2000` (2 seconds)
+    </ResponseField>
+    
+    <ResponseField name="speed" type="number">
+      Animation speed in pixels per frame.
+      
+      **Default:** `0.5`
+    </ResponseField>
+    
+    <ResponseField name="pauseOnHover" type="boolean">
+      Pause animation when user hovers over marquee.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="limit" type="number">
+      Maximum number of events to display in marquee.
+      
+      **Default:** `50`
+    </ResponseField>
+    
+    <ResponseField name="sort" type="'asc' | 'desc'">
+      Sort order for events: 'desc' = newest first, 'asc' = oldest first.
+      
+      **Default:** `"desc"`
+    </ResponseField>
+    
+    <ResponseField name="colors" type="EventColors">
+      Custom colors for different event severities.
+      
+      ```typescript
+      type EventColors = {
+        success?: string;
+        info?: string;
+        warning?: string;
+        error?: string;
+        failed?: string;
+      };
+      ```
+    </ResponseField>
+    
+    <ResponseField name="timeWindow" type="TimeWindowConfig">
+      Time window for fetching events.
+      
+      **Default:** `{ since: "1h" }`
+      
+      ```typescript
+      type TimeWindowConfig =
+        | { since: TimeWindowPreset; custom?: never }
+        | { custom: number; since?: never };
+      
+      type TimeWindowPreset =
+        | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h"
+        | "1d" | "2d" | "3d" | "7d" | "14d" | "30d";
+      ```
+    </ResponseField>
+  </Expandable>
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    liveMarquee: {
+      enabled: true,
+      pollInterval: 3000,
+      speed: 1,
+      pauseOnHover: true,
+      limit: 100,
+      sort: "desc",
+      timeWindow: { since: "1h" },
+      colors: {
+        success: "#10B981",
+        error: "#EF4444",
+        warning: "#F59E0B",
+        info: "#3B82F6"
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="onEventIngest" type="(event: AuthEvent) => void | Promise<void>">
+  Callback function invoked when an event is ingested. Use this for custom event processing, logging, or analytics.
+  
+  **Example:**
+  ```typescript
+  events: {
+    enabled: true,
+    onEventIngest: async (event) => {
+      console.log(`Event captured: ${event.type}`);
+      // Send to analytics service
+      await analytics.track(event);
+    }
+  }
+  ```
+</ParamField>
+
+## Event Types
+
+Complete list of available `AuthEventType` values:
+
+### User Events
+- `"user.joined"` - User registration/sign-up
+- `"user.logged_in"` - User login
+- `"user.logged_out"` - User logout
+- `"user.updated"` - User profile updated
+- `"user.password_changed"` - Password changed
+- `"user.email_verified"` - Email verification completed
+- `"user.banned"` - User banned
+- `"user.unbanned"` - User unbanned
+- `"user.deleted"` - User account deleted
+- `"user.delete_verification_requested"` - Account deletion verification requested
+
+### Organization Events
+- `"organization.created"` - Organization created
+- `"organization.updated"` - Organization updated
+- `"organization.deleted"` - Organization deleted
+- `"member.added"` - Member added to organization
+- `"member.removed"` - Member removed from organization
+- `"member.role_changed"` - Member role changed
+
+### Team Events
+- `"team.created"` - Team created
+- `"team.updated"` - Team updated
+- `"team.deleted"` - Team deleted
+- `"team.member.added"` - Member added to team
+- `"team.member.removed"` - Member removed from team
+
+### Session Events
+- `"session.created"` - New session created
+- `"login.failed"` - Failed login attempt
+
+### Password Events
+- `"password.reset_requested"` - Password reset requested
+- `"password.reset_completed"` - Password reset completed
+- `"password.reset_requested_otp"` - Password reset via OTP requested
+- `"password.reset_completed_otp"` - Password reset via OTP completed
+
+### OAuth Events
+- `"oauth.linked"` - OAuth account linked
+- `"oauth.unlinked"` - OAuth account unlinked
+- `"oauth.sign_in"` - Sign in via OAuth
+
+### Invitation Events
+- `"invitation.created"` - Invitation sent
+- `"invitation.accepted"` - Invitation accepted
+- `"invitation.rejected"` - Invitation rejected
+- `"invitation.cancelled"` - Invitation cancelled
+
+### Phone Number Events
+- `"phone_number.otp_requested"` - Phone number OTP requested
+- `"phone_number.verification"` - Phone number verified
+
+## AuthEvent Interface
+
+```typescript
+export interface AuthEvent {
+  id: string;
+  type: AuthEventType;
+  timestamp: Date;
+  status: "success" | "failed";
+  userId?: string;
+  sessionId?: string;
+  organizationId?: string;
+  metadata?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  source: "app" | "api";
+  display?: {
+    message: string;
+    severity?: "info" | "success" | "warning" | "failed";
+  };
+}
+```
+
+## Usage Examples
+
+### Basic Setup with Adapter
+
+```typescript
+import { defineStudioConfig } from "better-auth-studio";
+
+export const studioConfig = defineStudioConfig({
+  auth,
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+  },
+});
+```
+
+### With Prisma Client
+
+```typescript
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export const studioConfig = defineStudioConfig({
+  auth,
+  events: {
+    enabled: true,
+    client: prisma,
+    clientType: "prisma",
+    tableName: "auth_events",
+  },
+});
+```
+
+### Selective Event Tracking
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    include: [
+      "user.joined",
+      "user.logged_in",
+      "login.failed",
+      "password.reset_requested",
+    ],
+  },
+});
+```
+
+### With Custom Event Processing
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    batchSize: 100,
+    flushInterval: 10000,
+    onEventIngest: async (event) => {
+      // Send to external analytics
+      if (event.type === "login.failed") {
+        await securityMonitoring.alert(event);
+      }
+    },
+  },
+});
+```
+
+### Full Configuration with Live Marquee
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    batchSize: 50,
+    flushInterval: 5000,
+    retryOnError: true,
+    exclude: ["session.created"], // Too noisy
+    liveMarquee: {
+      enabled: true,
+      pollInterval: 2000,
+      speed: 0.5,
+      pauseOnHover: true,
+      limit: 100,
+      sort: "desc",
+      timeWindow: { since: "1h" },
+      colors: {
+        success: "#10B981",
+        error: "#EF4444",
+        warning: "#F59E0B",
+        info: "#3B82F6",
+        failed: "#DC2626",
+      },
+    },
+    onEventIngest: async (event) => {
+      console.log(`📊 Event: ${event.type}`, event);
+    },
+  },
+});
+```
+
+## Related
+
+- [StudioConfig](/api/config/studio-config) - Main configuration object
+- [StudioAccessConfig](/api/config/access-config) - Access control configuration
+- [StudioMetadata](/api/config/metadata-config) - Metadata and branding

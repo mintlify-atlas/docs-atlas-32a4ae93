@@ -1,0 +1,308 @@
+---
+title: StudioMetadata
+description: Metadata and branding configuration for Better Auth Studio
+---
+
+## Overview
+
+The `StudioMetadata` type allows you to customize the appearance and branding of the Studio UI. Configure the title, logo, theme, colors, feature visibility, and more.
+
+## Type Definition
+
+```typescript
+export type StudioMetadata = {
+  title?: string;
+  logo?: string;
+  favicon?: string;
+  company?: {
+    name?: string;
+    website?: string;
+    supportEmail?: string;
+  };
+  theme?: "dark" | "light" | "auto";
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  features?: {
+    users?: boolean;
+    sessions?: boolean;
+    organizations?: boolean;
+    analytics?: boolean;
+    tools?: boolean;
+    security?: boolean;
+  };
+  links?: Array<{ label: string; url: string }>;
+  custom?: Record<string, any>;
+};
+```
+
+## Fields
+
+<ParamField path="title" type="string">
+  Custom title for the Studio UI. Displayed in the browser tab and header.
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    title: "Acme Corp Auth Studio"
+  }
+  ```
+</ParamField>
+
+<ParamField path="logo" type="string">
+  URL or path to your company logo. Displayed in the Studio header.
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    logo: "/images/logo.png"
+  }
+  ```
+</ParamField>
+
+<ParamField path="favicon" type="string">
+  URL or path to your favicon. Displayed in the browser tab.
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    favicon: "/favicon.ico"
+  }
+  ```
+</ParamField>
+
+<ParamField path="company" type="object">
+  Company information displayed in the Studio UI.
+  
+  <Expandable title="company fields">
+    <ResponseField name="name" type="string">
+      Your company name.
+    </ResponseField>
+    
+    <ResponseField name="website" type="string">
+      Your company website URL.
+    </ResponseField>
+    
+    <ResponseField name="supportEmail" type="string">
+      Support email address for users to contact.
+    </ResponseField>
+  </Expandable>
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    company: {
+      name: "Acme Corporation",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com"
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="theme" type="'dark' | 'light' | 'auto'">
+  Color theme for the Studio UI.
+  
+  - `"dark"` - Always use dark theme
+  - `"light"` - Always use light theme
+  - `"auto"` - Follow system preference
+  
+  **Default:** `"dark"`
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    theme: "auto"
+  }
+  ```
+</ParamField>
+
+<ParamField path="colors" type="object">
+  Custom color palette for the Studio UI.
+  
+  <Expandable title="colors fields">
+    <ResponseField name="primary" type="string">
+      Primary color (hex, rgb, or CSS color name).
+    </ResponseField>
+    
+    <ResponseField name="secondary" type="string">
+      Secondary color (hex, rgb, or CSS color name).
+    </ResponseField>
+    
+    <ResponseField name="accent" type="string">
+      Accent color (hex, rgb, or CSS color name).
+    </ResponseField>
+  </Expandable>
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    colors: {
+      primary: "#3B82F6",
+      secondary: "#8B5CF6",
+      accent: "#10B981"
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="features" type="object">
+  Control visibility of Studio features and pages. Disable features you don't use.
+  
+  <Expandable title="features fields">
+    <ResponseField name="users" type="boolean">
+      Show/hide the Users page.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="sessions" type="boolean">
+      Show/hide the Sessions page.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="organizations" type="boolean">
+      Show/hide the Organizations page.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="analytics" type="boolean">
+      Show/hide the Analytics page.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="tools" type="boolean">
+      Show/hide the Tools page.
+      
+      **Default:** `true`
+    </ResponseField>
+    
+    <ResponseField name="security" type="boolean">
+      Show/hide the Security page.
+      
+      **Default:** `true`
+    </ResponseField>
+  </Expandable>
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    features: {
+      organizations: false, // Hide if not using organizations
+      analytics: true,
+      users: true,
+      sessions: true,
+      tools: true,
+      security: true
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="links" type="Array<{ label: string; url: string }>">
+  Custom navigation links to display in the Studio UI.
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    links: [
+      { label: "Documentation", url: "https://docs.acme.com" },
+      { label: "Support", url: "https://support.acme.com" },
+      { label: "Main App", url: "https://app.acme.com" }
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="custom" type="Record<string, any>">
+  Custom metadata for your own use. Store any additional configuration data.
+  
+  **Example:**
+  ```typescript
+  metadata: {
+    custom: {
+      apiVersion: "v2",
+      region: "us-east-1",
+      customFeature: true
+    }
+  }
+  ```
+</ParamField>
+
+## Usage Examples
+
+### Basic Branding
+
+```typescript
+import { defineStudioConfig } from "better-auth-studio";
+
+export const studioConfig = defineStudioConfig({
+  auth,
+  metadata: {
+    title: "My App Studio",
+    logo: "/logo.svg",
+    theme: "dark",
+  },
+});
+```
+
+### Full Customization
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  metadata: {
+    title: "Acme Auth Studio",
+    logo: "/images/acme-logo.svg",
+    favicon: "/favicon.ico",
+    company: {
+      name: "Acme Corporation",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    theme: "auto",
+    colors: {
+      primary: "#FF6B6B",
+      secondary: "#4ECDC4",
+      accent: "#FFE66D",
+    },
+    features: {
+      users: true,
+      sessions: true,
+      organizations: false,
+      analytics: true,
+      tools: true,
+      security: true,
+    },
+    links: [
+      { label: "Documentation", url: "https://docs.acme.com" },
+      { label: "API Status", url: "https://status.acme.com" },
+    ],
+  },
+});
+```
+
+### Minimal Configuration
+
+```typescript
+export const studioConfig = defineStudioConfig({
+  auth,
+  metadata: {
+    title: "Admin Dashboard",
+    features: {
+      organizations: false, // Disable unused features
+      analytics: false,
+    },
+  },
+});
+```
+
+## Related
+
+- [StudioConfig](/api/config/studio-config) - Main configuration object
+- [StudioAccessConfig](/api/config/access-config) - Access control configuration

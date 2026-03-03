@@ -1,122 +1,129 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Better Auth Studio",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#3B82F6",
+    "light": "#60A5FA",
+    "dark": "#2563EB"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Kinfe123/better-auth-studio"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Kinfe123/better-auth-studio"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/user-management",
+              "features/organization-management",
+              "features/session-management",
+              "features/event-tracking",
+              "features/developer-tools"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Self-Hosting",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "self-hosting/overview",
+              "self-hosting/nextjs",
+              "self-hosting/express",
+              "self-hosting/other-frameworks",
+              "self-hosting/configuration"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Configuration",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "configuration/database-adapters",
+              "configuration/access-control",
+              "configuration/ip-geolocation",
+              "configuration/event-ingestion",
+              "configuration/metadata"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/cli-usage",
+              "guides/watch-mode",
+              "guides/bulk-operations",
+              "guides/custom-branding",
+              "guides/troubleshooting"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "CLI Commands",
             "pages": [
-              "api-reference/introduction"
+              "api/cli/start",
+              "api/cli/init"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Framework Adapters",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/adapters/nextjs",
+              "api/adapters/express",
+              "api/adapters/hono",
+              "api/adapters/svelte-kit",
+              "api/adapters/remix",
+              "api/adapters/nuxt",
+              "api/adapters/solid-start",
+              "api/adapters/tanstack-start",
+              "api/adapters/astro",
+              "api/adapters/elysia"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/config/studio-config",
+              "api/config/access-config",
+              "api/config/metadata-config",
+              "api/config/events-config"
+            ]
+          },
+          {
+            "group": "Event Ingestion",
+            "pages": [
+              "api/events/providers",
+              "api/events/helpers",
+              "api/events/types"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/utilities/hook-injector",
+              "api/utilities/event-ingestion"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

@@ -1,0 +1,349 @@
+---
+title: Installation
+description: Learn how to install Better Auth Studio using npm, pnpm, or yarn
+---
+
+Better Auth Studio can be installed in multiple ways depending on your use case. Choose the method that best fits your workflow.
+
+## Installation methods
+
+### Recommended: Dev dependency
+
+Install Better Auth Studio as a development dependency in your project. This ensures you're using a project-specific version and keeps your production bundle clean.
+
+<CodeGroup>
+
+```bash pnpm
+pnpm add -D better-auth-studio
+```
+
+```bash npm
+npm install --save-dev better-auth-studio
+```
+
+```bash yarn
+yarn add -D better-auth-studio
+```
+
+</CodeGroup>
+
+Then run it using your package manager:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm better-auth-studio start
+```
+
+```bash npm
+npx better-auth-studio start
+```
+
+```bash yarn
+yarn better-auth-studio start
+```
+
+</CodeGroup>
+
+<Tip>
+  Add a script to your `package.json` for easier access:
+
+  ```json package.json
+  {
+    "scripts": {
+      "studio": "better-auth-studio start",
+      "studio:watch": "better-auth-studio start --watch"
+    }
+  }
+  ```
+
+  Then run: `pnpm studio`
+</Tip>
+
+### Global installation
+
+Install Better Auth Studio globally to use it across multiple projects:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm add -g better-auth-studio
+```
+
+```bash npm
+npm install -g better-auth-studio
+```
+
+```bash yarn
+yarn global add better-auth-studio
+```
+
+</CodeGroup>
+
+Then run it from any directory:
+
+```bash
+better-auth-studio start
+```
+
+### One-time use with pnpx
+
+Run Better Auth Studio without installing it using `pnpx`. This is perfect for trying it out or occasional use:
+
+```bash
+pnpx better-auth-studio start
+```
+
+<Info>
+  The first run will download the package, which may take a moment. Subsequent runs will be faster as the package is cached.
+</Info>
+
+### Production dependency (self-hosting)
+
+If you're self-hosting Studio in production, install it as a regular dependency:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash yarn
+yarn add better-auth-studio
+```
+
+</CodeGroup>
+
+<Warning>
+  For self-hosting, you **must** install as a regular dependency (not devDependency) since it's required at runtime in production.
+</Warning>
+
+Learn more about self-hosting in the [self-hosting guide](/self-hosting).
+
+## Verify installation
+
+Check that Better Auth Studio is installed correctly:
+
+```bash
+pnpx better-auth-studio --version
+```
+
+This should output the current version (e.g., `1.1.3-beta.25`).
+
+## Requirements
+
+Before installing, ensure you meet these requirements:
+
+- **Node.js**: v18.0.0 or higher
+- **Better Auth**: A project with Better Auth configured
+- **Database**: One of the supported database adapters:
+  - Prisma (PostgreSQL, MySQL, SQLite)
+  - Drizzle (PostgreSQL, MySQL, SQLite)
+  - better-sqlite3
+
+## Package details
+
+**Package name**: `better-auth-studio`
+
+**CLI command**: `better-auth-studio`
+
+**Current version**: `1.1.3-beta.25` (beta)
+
+**License**: MIT
+
+## Updating
+
+Keep Better Auth Studio up to date to get the latest features and bug fixes.
+
+### Update dev dependency
+
+<CodeGroup>
+
+```bash pnpm
+pnpm update better-auth-studio
+```
+
+```bash npm
+npm update better-auth-studio
+```
+
+```bash yarn
+yarn upgrade better-auth-studio
+```
+
+</CodeGroup>
+
+### Update global installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm add -g better-auth-studio@latest
+```
+
+```bash npm
+npm install -g better-auth-studio@latest
+```
+
+```bash yarn
+yarn global upgrade better-auth-studio
+```
+
+</CodeGroup>
+
+### Check for updates
+
+View available versions:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm view better-auth-studio versions
+```
+
+```bash npm
+npm view better-auth-studio versions
+```
+
+</CodeGroup>
+
+## Available commands
+
+Once installed, you have access to these commands:
+
+### Start Studio
+
+```bash
+better-auth-studio start [options]
+```
+
+Starts the Studio development server.
+
+**Options**:
+
+- `--port <number>` - Specify port (default: 3000)
+- `--host <string>` - Specify host (default: localhost)
+- `--no-open` - Don't automatically open browser
+- `--config <path>` - Path to auth config file
+- `--watch` - Watch for changes and auto-reload
+
+**Examples**:
+
+```bash
+# Start on port 3001
+better-auth-studio start --port 3001
+
+# Start with custom config file
+better-auth-studio start --config ./src/lib/auth.ts
+
+# Start with watch mode enabled
+better-auth-studio start --watch
+
+# Combine multiple options
+better-auth-studio start --port 3001 --watch --no-open
+```
+
+### Initialize self-hosting
+
+```bash
+better-auth-studio init
+```
+
+Creates a `studio.config.ts` file and route handler for self-hosting. Learn more in the [self-hosting guide](/self-hosting).
+
+### Show version
+
+```bash
+better-auth-studio --version
+```
+
+Displays the installed version.
+
+### Show help
+
+```bash
+better-auth-studio --help
+```
+
+Shows available commands and options.
+
+## Comparison of installation methods
+
+| Method | Use case | Pros | Cons |
+|--------|----------|------|------|
+| **Dev dependency** | Regular development use | Project-specific version, tracked in package.json | Requires installation per project |
+| **Global** | Use across multiple projects | Available everywhere, single installation | Version management across projects |
+| **pnpx** | Trying it out, occasional use | No installation needed, always latest | Slower first run, no version control |
+| **Production dependency** | Self-hosting in production | Deployed with your app | Larger bundle size |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command not found after global install">
+    Make sure your global npm/pnpm bin directory is in your PATH:
+
+    ```bash
+    # For pnpm
+    pnpm setup
+
+    # Check pnpm global bin location
+    pnpm bin -g
+    ```
+
+    Add the output directory to your PATH if it's not already there.
+  </Accordion>
+
+  <Accordion title="Permission errors on global install">
+    On Unix systems, you might need elevated permissions:
+
+    ```bash
+    sudo pnpm add -g better-auth-studio
+    ```
+
+    Or configure pnpm to use a user-level directory (recommended):
+
+    ```bash
+    pnpm setup
+    ```
+  </Accordion>
+
+  <Accordion title="Node version errors">
+    Better Auth Studio requires Node.js v18 or higher. Check your version:
+
+    ```bash
+    node --version
+    ```
+
+    If needed, upgrade using [nvm](https://github.com/nvm-sh/nvm) or download from [nodejs.org](https://nodejs.org).
+  </Accordion>
+
+  <Accordion title="Package not found with pnpx">
+    Clear the pnpm cache and try again:
+
+    ```bash
+    pnpm store prune
+    pnpx better-auth-studio start
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quickstart">
+    Get Studio running in your project
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/database-adapters">
+    Learn how to configure your database adapter
+  </Card>
+  <Card title="Self-hosting" icon="server" href="/self-hosting/overview">
+    Deploy Studio with your application
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/api/cli/start">
+    Explore all available CLI commands and options
+  </Card>
+</CardGroup>

@@ -1,0 +1,558 @@
+---
+title: Bulk Operations
+description: Seed and manage multiple users, organizations, and teams efficiently with bulk operations
+---
+
+## Overview
+
+Better Auth Studio provides powerful bulk operations for quickly populating your database with test data. This is essential for development, testing, and demonstrating your authentication system.
+
+## Bulk User Seeding
+
+### Overview
+
+Create multiple test users at once with customizable attributes.
+
+### Accessing Bulk User Operations
+
+<Steps>
+  <Step title="Navigate to Users">
+    Go to the **Users** page in the studio dashboard.
+  </Step>
+  
+  <Step title="Open Bulk Actions">
+    Click the **Bulk Operations** or **Seed Users** button in the toolbar.
+  </Step>
+  
+  <Step title="Configure Settings">
+    Set the number of users and configure user attributes.
+  </Step>
+  
+  <Step title="Execute">
+    Click **Generate Users** to create the test users.
+  </Step>
+</Steps>
+
+### User Generation Options
+
+<Accordion title="Number of Users">
+  **Range:** 1-1000 users per operation
+  
+  ```json
+  {
+    "count": 50,
+    "message": "Generate 50 test users"
+  }
+  ```
+  
+  <Warning>
+    Generating large numbers of users (500+) may take several seconds and could impact database performance.
+  </Warning>
+</Accordion>
+
+<Accordion title="Email Pattern">
+  **Options:**
+  - Sequential: `user1@example.com`, `user2@example.com`
+  - Random: `john.doe@example.com`, `jane.smith@example.com`
+  - Custom domain: `user1@yourcompany.com`
+  
+  ```json
+  {
+    "emailPattern": "sequential",
+    "domain": "example.com"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Password Configuration">
+  **Options:**
+  - Same password for all users
+  - Random secure passwords
+  - Custom password pattern
+  
+  ```json
+  {
+    "password": "testPassword123",
+    "hashPasswords": true
+  }
+  ```
+  
+  <Tip>
+    For testing, use the same password for all users to simplify login testing.
+  </Tip>
+</Accordion>
+
+<Accordion title="User Attributes">
+  **Configurable Fields:**
+  - Email verification status
+  - Account creation date
+  - User roles
+  - Custom metadata
+  
+  ```json
+  {
+    "emailVerified": true,
+    "createdAt": "2024-01-01",
+    "role": "user"
+  }
+  ```
+</Accordion>
+
+### Example: Generate Test Users
+
+<CodeGroup>
+```json Simple Generation
+{
+  "count": 10,
+  "emailPattern": "sequential",
+  "domain": "test.com",
+  "password": "password123",
+  "emailVerified": false
+}
+```
+
+```json Advanced Generation
+{
+  "count": 100,
+  "emailPattern": "random",
+  "domain": "company.com",
+  "password": "SecurePass123!",
+  "emailVerified": true,
+  "defaultRole": "user",
+  "metadata": {
+    "source": "bulk_seed",
+    "environment": "development"
+  }
+}
+```
+
+```json Production-Like Data
+{
+  "count": 50,
+  "emailPattern": "random",
+  "domain": "example.com",
+  "password": "TestUser123",
+  "emailVerified": true,
+  "distributeCreatedAt": true,
+  "dateRange": {
+    "start": "2024-01-01",
+    "end": "2024-12-31"
+  }
+}
+```
+</CodeGroup>
+
+### Generated User Data
+
+Bulk operations create users with:
+
+```typescript
+{
+  id: "generated-uuid",
+  email: "user1@example.com",
+  emailVerified: false,
+  name: "Test User 1",
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  // Password is automatically hashed
+}
+```
+
+## Bulk Organization Seeding
+
+### Overview
+
+Create multiple organizations with associated teams and members.
+
+### Accessing Bulk Organization Operations
+
+<Steps>
+  <Step title="Navigate to Organizations">
+    Go to the **Organizations** page in the studio dashboard.
+  </Step>
+  
+  <Step title="Open Bulk Seeding">
+    Click the **Bulk Operations** or **Seed Organizations** button.
+  </Step>
+  
+  <Step title="Configure Structure">
+    Set number of organizations, teams per org, and members per team.
+  </Step>
+  
+  <Step title="Execute">
+    Click **Generate Organizations** to create the structure.
+  </Step>
+</Steps>
+
+### Organization Generation Options
+
+<Accordion title="Number of Organizations">
+  **Range:** 1-100 organizations per operation
+  
+  ```json
+  {
+    "count": 10,
+    "message": "Generate 10 test organizations"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Organization Naming">
+  **Options:**
+  - Sequential: `Organization 1`, `Organization 2`
+  - Random company names: `Acme Corp`, `TechStart Inc`
+  - Custom prefix: `MyCompany 1`, `MyCompany 2`
+  
+  ```json
+  {
+    "namePattern": "random",
+    "prefix": "Test Org"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Slug Generation">
+  **Auto-generated from name:**
+  - `Acme Corp` → `acme-corp`
+  - `TechStart Inc` → `techstart-inc`
+  
+  ```json
+  {
+    "name": "Acme Corp",
+    "slug": "acme-corp"
+  }
+  ```
+  
+  <Note>
+    Slugs are automatically made unique by appending numbers if conflicts occur.
+  </Note>
+</Accordion>
+
+<Accordion title="Organization Metadata">
+  **Configurable Fields:**
+  - Logo URL
+  - Description
+  - Creation date
+  - Custom metadata
+  
+  ```json
+  {
+    "logo": "https://example.com/logo.png",
+    "metadata": {
+      "industry": "Technology",
+      "size": "50-100"
+    }
+  }
+  ```
+</Accordion>
+
+### Team Generation
+
+<Accordion title="Teams Per Organization">
+  **Range:** 0-20 teams per organization
+  
+  ```json
+  {
+    "teamsPerOrg": 3,
+    "teamNames": ["Engineering", "Marketing", "Sales"]
+  }
+  ```
+</Accordion>
+
+<Accordion title="Team Configuration">
+  **Options:**
+  - Default teams (Engineering, Sales, Marketing, etc.)
+  - Custom team names
+  - Random team names
+  
+  ```json
+  {
+    "teamPattern": "default",
+    "customTeams": ["DevOps", "Design", "Support"]
+  }
+  ```
+</Accordion>
+
+### Member Assignment
+
+<Accordion title="Members Per Team">
+  **Range:** 0-50 members per team
+  
+  ```json
+  {
+    "membersPerTeam": 5,
+    "assignmentStrategy": "random"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Member Roles">
+  **Available Roles:**
+  - Owner
+  - Admin  
+  - Member
+  
+  ```json
+  {
+    "defaultRole": "member",
+    "ownerCount": 1,
+    "adminCount": 2
+  }
+  ```
+</Accordion>
+
+### Example: Generate Organizations
+
+<CodeGroup>
+```json Simple Structure
+{
+  "organizationCount": 5,
+  "teamsPerOrg": 2,
+  "membersPerTeam": 3,
+  "namePattern": "sequential"
+}
+```
+
+```json Complex Structure
+{
+  "organizationCount": 10,
+  "teamsPerOrg": 5,
+  "membersPerTeam": 10,
+  "namePattern": "random",
+  "teamNames": ["Engineering", "Product", "Design", "Marketing", "Sales"],
+  "memberRoles": {
+    "owner": 1,
+    "admin": 2,
+    "member": 7
+  },
+  "metadata": {
+    "environment": "development",
+    "seededAt": "2024-03-03"
+  }
+}
+```
+
+```json Enterprise Scale
+{
+  "organizationCount": 50,
+  "teamsPerOrg": 10,
+  "membersPerTeam": 20,
+  "namePattern": "random",
+  "useExistingUsers": true,
+  "createMissingUsers": true
+}
+```
+</CodeGroup>
+
+## Performance Considerations
+
+### Database Load
+
+<Warning>
+  **Large Operations:** Generating hundreds of users/organizations can impact database performance.
+</Warning>
+
+**Best Practices:**
+
+<Steps>
+  <Step title="Start small">
+    Test with 10-20 records first to verify configuration.
+  </Step>
+  
+  <Step title="Increase gradually">
+    Scale up to larger numbers once you've verified the setup.
+  </Step>
+  
+  <Step title="Monitor performance">
+    Watch database CPU/memory during large operations.
+  </Step>
+  
+  <Step title="Use batching">
+    For very large datasets, run multiple smaller operations.
+  </Step>
+</Steps>
+
+### Operation Times
+
+Typical execution times:
+
+| Records | Estimated Time |
+|---------|---------------|
+| 10 users | &lt;1 second |
+| 100 users | 2-5 seconds |
+| 500 users | 10-20 seconds |
+| 1000 users | 30-60 seconds |
+
+<Tip>
+  **Password Hashing:** The majority of time is spent securely hashing passwords. This is intentional for security.
+</Tip>
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Development Testing" icon="code">
+    Quickly populate local database with realistic test data.
+  </Card>
+  <Card title="Demo Environments" icon="presentation">
+    Create impressive demos with realistic user bases.
+  </Card>
+  <Card title="Load Testing" icon="gauge">
+    Generate large datasets to test performance and scalability.
+  </Card>
+  <Card title="Feature Testing" icon="flask">
+    Test features like pagination, search, and filtering with real data.
+  </Card>
+</CardGroup>
+
+## Data Cleanup
+
+### Deleting Bulk Data
+
+To remove seeded data:
+
+<Steps>
+  <Step title="Filter seeded records">
+    Use search/filter to find bulk-generated records.
+  </Step>
+  
+  <Step title="Select records">
+    Use multi-select to choose records for deletion.
+  </Step>
+  
+  <Step title="Bulk delete">
+    Click **Delete Selected** to remove multiple records at once.
+  </Step>
+</Steps>
+
+<Warning>
+  **Irreversible:** Bulk delete operations cannot be undone. Always backup production data before bulk operations.
+</Warning>
+
+### Database Reset
+
+For complete cleanup during development:
+
+```bash
+# Prisma
+prisma migrate reset
+
+# Drizzle
+pnpm drizzle-kit push
+
+# SQLite
+rm better-auth.db
+```
+
+## Best Practices
+
+### Development Environment
+
+<Accordion title="Use realistic data">
+  Generate data that mimics production for better testing:
+  - Realistic email domains
+  - Varied user attributes
+  - Proper role distribution
+  - Distributed creation dates
+</Accordion>
+
+<Accordion title="Tag seeded data">
+  Add metadata to identify bulk-generated records:
+  ```json
+  {
+    "metadata": {
+      "source": "bulk_seed",
+      "seededAt": "2024-03-03",
+      "batch": "dev-001"
+    }
+  }
+  ```
+</Accordion>
+
+<Accordion title="Document seed operations">
+  Keep track of what you've seeded:
+  - Number of records
+  - Configuration used
+  - Purpose of the data
+  - Date seeded
+</Accordion>
+
+### Testing Scenarios
+
+<Accordion title="Pagination testing">
+  ```json
+  {
+    "count": 150,
+    "comment": "Test pagination with 3 pages of 50 users each"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Search testing">
+  ```json
+  {
+    "emailPattern": "random",
+    "count": 100,
+    "comment": "Diverse emails for search functionality testing"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Permission testing">
+  ```json
+  {
+    "roles": {
+      "admin": 5,
+      "user": 45,
+      "moderator": 10
+    },
+    "comment": "Mixed roles for permission testing"
+  }
+  ```
+</Accordion>
+
+## Limitations
+
+### Current Limitations
+
+<Warning>
+  - **Maximum users per operation:** 1000
+  - **Maximum organizations per operation:** 100
+  - **Maximum teams per organization:** 20
+  - **Maximum members per team:** 50
+</Warning>
+
+### Working Around Limits
+
+For larger datasets:
+
+<Steps>
+  <Step title="Run multiple operations">
+    Execute several bulk operations sequentially.
+  </Step>
+  
+  <Step title="Use database scripts">
+    For very large datasets (10k+ records), consider direct database seeding scripts.
+  </Step>
+  
+  <Step title="Implement custom seeding">
+    Create custom seeding scripts using Better Auth APIs.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="User Management" icon="users" href="/features/user-management">
+    Learn about managing users in the studio
+  </Card>
+  <Card title="Organizations" icon="building" href="/features/organization-management">
+    Explore organization management features
+  </Card>
+  <Card title="CLI Usage" icon="terminal" href="/guides/cli-usage">
+    Master the CLI for efficient workflows
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

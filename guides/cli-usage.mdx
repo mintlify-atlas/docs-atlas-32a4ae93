@@ -1,0 +1,352 @@
+---
+title: CLI Usage
+description: Complete guide to Better Auth Studio command-line interface options and commands
+---
+
+## Overview
+
+Better Auth Studio provides a powerful CLI for managing your Better Auth applications. The CLI supports various options for customization, watch mode, and configuration.
+
+## Installation
+
+You can use Better Auth Studio in multiple ways:
+
+<CodeGroup>
+```bash npm
+npx better-auth-studio [command]
+```
+
+```bash pnpm
+pnpx better-auth-studio [command]
+```
+
+```bash yarn
+yarn dlx better-auth-studio [command]
+```
+
+```bash Dev Dependency
+# Install as dev dependency
+pnpm add -D better-auth-studio
+
+# Run from package.json
+pnpm better-auth-studio [command]
+```
+</CodeGroup>
+
+<Tip>
+  **Recommended:** Install as a dev dependency for project-specific versions and consistent behavior across your team.
+</Tip>
+
+## Commands
+
+### start
+
+Starts the Better Auth Studio development server.
+
+```bash
+pnpx better-auth-studio start [options]
+```
+
+**Default Behavior:**
+- Starts server on `http://localhost:3002`
+- Automatically opens your browser
+- Auto-detects auth config file
+- Serves dashboard and API endpoints
+
+### init
+
+Initializes Better Auth Studio for self-hosting in production.
+
+```bash
+pnpx better-auth-studio init [options]
+```
+
+This creates:
+- `studio.config.ts` - Studio configuration file
+- API route handlers (Next.js App Router or Express)
+- Access control setup
+
+**Options:**
+- `--api-dir <path>` - Custom app directory path for Next.js (e.g., "app" or "src/app")
+
+<Note>
+  The `init` command auto-detects "app" or "src/app" directories for Next.js projects.
+</Note>
+
+## CLI Options
+
+### Port Configuration
+
+```bash
+pnpx better-auth-studio start --port <number>
+```
+
+**Default:** `3002`
+
+**Examples:**
+```bash
+# Start on port 3001
+pnpx better-auth-studio start --port 3001
+
+# Start on port 8080
+pnpx better-auth-studio start --port 8080
+```
+
+<Tip>
+  Use `--port` when port 3002 is already in use or when integrating with existing development setups.
+</Tip>
+
+### Host Configuration
+
+```bash
+pnpx better-auth-studio start --host <string>
+```
+
+**Default:** `localhost`
+
+**Examples:**
+```bash
+# Bind to all network interfaces
+pnpx better-auth-studio start --host 0.0.0.0
+
+# Use specific hostname
+pnpx better-auth-studio start --host 192.168.1.100
+```
+
+<Warning>
+  Binding to `0.0.0.0` makes your studio accessible from other devices on your network. Only use this in trusted environments.
+</Warning>
+
+### Custom Config Path
+
+```bash
+pnpx better-auth-studio start --config <path>
+```
+
+**Default:** Auto-detects from common locations
+
+The CLI searches for config files in this order:
+1. `auth.ts`
+2. `src/auth.ts`
+3. `lib/auth.ts`
+4. Other common locations
+
+**Examples:**
+```bash
+# Relative path
+pnpx better-auth-studio start --config ./src/lib/auth.ts
+
+# Absolute path
+pnpx better-auth-studio start --config /path/to/project/auth.ts
+
+# Custom filename
+pnpx better-auth-studio start --config ./custom-auth.ts
+```
+
+<Tip>
+  Use `--config` when your auth file is in a non-standard location or when auto-detection fails.
+</Tip>
+
+### Disable Auto-Open Browser
+
+```bash
+pnpx better-auth-studio start --no-open
+```
+
+**Default:** Browser opens automatically
+
+**Example:**
+```bash
+# Start without opening browser
+pnpx better-auth-studio start --no-open
+```
+
+<Note>
+  Useful for CI/CD environments, remote development, or when you prefer to open the browser manually.
+</Note>
+
+### Watch Mode
+
+```bash
+pnpx better-auth-studio start --watch
+```
+
+Enables automatic server reload when your `auth.ts` configuration changes.
+
+**Features:**
+- Monitors auth config file for changes
+- Automatically restarts server
+- Updates browser UI via WebSocket (no manual refresh needed)
+- Shows file change notifications in terminal
+
+**Example:**
+```bash
+# Enable watch mode
+pnpx better-auth-studio start --watch
+
+# Watch mode with custom config
+pnpx better-auth-studio start --watch --config ./src/lib/auth.ts
+```
+
+See [Watch Mode](/guides/watch-mode) for detailed information.
+
+### GeoIP Database Path
+
+```bash
+pnpx better-auth-studio start --geo-db <path>
+```
+
+Specifies path to MaxMind GeoLite2 database file (.mmdb) for IP geolocation in events and sessions.
+
+**Example:**
+```bash
+pnpx better-auth-studio start --geo-db ./data/GeoLite2-City.mmdb
+```
+
+<Note>
+  Download GeoLite2 databases from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data)
+</Note>
+
+## Combining Options
+
+You can combine multiple options for advanced configurations:
+
+<Steps>
+  <Step title="Basic custom setup">
+    ```bash
+    pnpx better-auth-studio start --port 3001 --no-open
+    ```
+  </Step>
+  
+  <Step title="Development with watch mode">
+    ```bash
+    pnpx better-auth-studio start --watch --config ./src/auth.ts
+    ```
+  </Step>
+  
+  <Step title="Full custom configuration">
+    ```bash
+    pnpx better-auth-studio start \
+      --port 3001 \
+      --host 0.0.0.0 \
+      --watch \
+      --config ./src/lib/auth.ts \
+      --no-open
+    ```
+  </Step>
+</Steps>
+
+## Utility Commands
+
+### Check Version
+
+```bash
+pnpx better-auth-studio --version
+```
+
+Displays the current version of Better Auth Studio.
+
+### Show Help
+
+```bash
+pnpx better-auth-studio --help
+```
+
+Displays all available commands and options.
+
+```bash
+# Command-specific help
+pnpx better-auth-studio start --help
+pnpx better-auth-studio init --help
+```
+
+## Environment Setup
+
+### Prerequisites
+
+Before using the CLI, ensure you have:
+
+<Accordion title="Node.js Version">
+  - **Required:** Node.js v18 or higher
+  - Check version: `node --version`
+  - Update if needed: [nodejs.org](https://nodejs.org)
+</Accordion>
+
+<Accordion title="Better Auth Project">
+  - Valid `auth.ts` configuration file
+  - Better Auth installed and configured
+  - Database adapter set up (Prisma, Drizzle, or SQLite)
+</Accordion>
+
+<Accordion title="Database Configuration">
+  - Database connection string configured
+  - Tables/schema migrated
+  - Database adapter properly initialized
+</Accordion>
+
+## Terminal Output
+
+When you start the studio, you'll see detailed output:
+
+```bash
+✔ Better Auth Studio is running!
+
+🌐 Open your browser and navigate to: http://localhost:3002
+📊 Dashboard available at: http://localhost:3002
+🔧 API endpoints available at: http://localhost:3002/api
+📋 Studio config found: studio.config.ts
+
+👀 Watch mode enabled - config changes will reload automatically
+
+Press Ctrl+C to stop the studio
+```
+
+**Output includes:**
+- Server status confirmation
+- Clickable URLs (in supported terminals)
+- Studio config detection status
+- Watch mode status (if enabled)
+- Events configuration status (if configured)
+- Database adapter information
+
+## Package.json Scripts
+
+For convenience, add scripts to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "studio": "better-auth-studio start",
+    "studio:watch": "better-auth-studio start --watch",
+    "studio:custom": "better-auth-studio start --port 3001 --config ./src/lib/auth.ts"
+  },
+  "devDependencies": {
+    "better-auth-studio": "latest"
+  }
+}
+```
+
+Then run:
+
+```bash
+pnpm studio
+pnpm studio:watch
+pnpm studio:custom
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Watch Mode" icon="eye" href="/guides/watch-mode">
+    Learn about automatic reload on config changes
+  </Card>
+  <Card title="Custom Branding" icon="palette" href="/guides/custom-branding">
+    Customize studio appearance and metadata
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/self-hosting/overview">
+    Deploy studio in production
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

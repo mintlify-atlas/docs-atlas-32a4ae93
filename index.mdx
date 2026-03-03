@@ -1,97 +1,129 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Better Auth Studio
+description: A powerful web-based admin dashboard for managing your Better Auth applications
 ---
 
-## Setting up
+<Note>
+  **Beta Version Notice**: Better Auth Studio is currently in beta and under active development. You may encounter bugs or incomplete features. Please report any issues on our [GitHub repository](https://github.com/Kinfe123/better-auth-studio).
+</Note>
 
-Get your documentation site up and running in minutes.
+## What is Better Auth Studio?
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Better Auth Studio is a comprehensive admin dashboard that provides a visual interface for managing your Better Auth applications. Instead of manually querying your database or writing custom admin panels, Studio gives you a production-ready interface to manage users, organizations, teams, and more.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quickstart">
+    Get up and running with Better Auth Studio in under 5 minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Installation" icon="download" href="/installation">
+    Learn about all installation options and choose what works best for you
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Self-hosting" icon="server" href="/self-hosting/overview">
+    Deploy Studio alongside your application for production use
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Configuration" icon="gear" href="/configuration/database-adapters">
+    Configure database adapters, plugins, and customize your Studio
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Try the demo
 
-Everything you need to create world-class documentation.
+Experience Better Auth Studio before installing it. Try our live demo to explore the admin interface:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+**Demo URL**: [https://bt-nextjs.vercel.app/admin](https://bt-nextjs.vercel.app/admin)
 
-## Need inspiration?
+- **Login email**: `admin@user.com`
+- **Password**: `admin@user.com`
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Warning>
+  This is a test environment for demonstration purposes only.
+</Warning>
+
+## Key features
+
+### Dashboard overview
+
+Get a bird's-eye view of your application with real-time statistics on users, teams, and organizations.
+
+### User management
+
+- View all users with pagination, search, and filtering
+- Create new users with email/password authentication
+- Edit user information and email verification status
+- Delete users or perform bulk operations
+- View detailed user profiles, sessions, and linked accounts
+- Track user activity with last-seen timestamps
+
+### Organization management
+
+- List and manage all organizations
+- Create organizations with custom slugs
+- Manage teams within organizations
+- Add or remove members from teams
+- Generate test data with bulk seeding
+
+### Settings and configuration
+
+- Check which Better Auth plugins are enabled
+- View database adapter and connection details
+- Configure OAuth providers (GitHub, Google, etc.)
+- Manage email verification and password reset settings
+
+## How it works
+
+Better Auth Studio operates in two modes:
+
+### 1. Development mode (CLI)
+
+Run Studio as a standalone CLI tool during development. It automatically detects your `auth.ts` configuration file and connects to your database.
+
+```bash
+pnpx better-auth-studio start
+```
+
+The CLI starts a local server at `http://localhost:3000` with live reload support.
+
+### 2. Production mode (self-hosted)
+
+Integrate Studio directly into your application as a route handler. This allows you to:
+
+- Deploy Studio alongside your application
+- Add authentication and role-based access control
+- Customize branding and appearance
+- Use your existing infrastructure
+
+Learn more in the [self-hosting guide](/self-hosting).
+
+## Prerequisites
+
+Before using Better Auth Studio, ensure you have:
+
+- **Node.js** v18 or higher
+- **A Better Auth project** with a valid `auth.ts` configuration file
+- **Database setup** using one of the supported adapters:
+  - Prisma (PostgreSQL, MySQL, SQLite)
+  - Drizzle (PostgreSQL, MySQL, SQLite)
+  - better-sqlite3
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quick start guide" icon="play" href="/quickstart">
+    Follow our step-by-step guide to start using Studio
+  </Card>
+  <Card title="Installation options" icon="terminal" href="/installation">
+    Explore different ways to install and run Studio
+  </Card>
+</CardGroup>
+
+## Get help
+
+If you encounter issues or have questions:
+
+- Search [existing issues](https://github.com/Kinfe123/better-auth-studio/issues) on GitHub
+- Create a new issue with detailed information
+- Join the Better Auth community for support
+
+## Hosted version
+
+Interested in a fully managed, hosted version of Better Auth Studio? Join the waitlist at [better-auth.build](https://better-auth.build).

@@ -1,0 +1,195 @@
+---
+title: StudioConfig
+description: Main configuration object for Better Auth Studio
+---
+
+## Overview
+
+The `StudioConfig` type is the main configuration object for Better Auth Studio. It defines all available settings including authentication, access control, metadata, events, and more.
+
+## Type Definition
+
+```typescript
+export type StudioConfig = {
+  auth: any;
+  basePath?: string;
+  access?: StudioAccessConfig;
+  metadata?: StudioMetadata;
+  lastSeenAt?: StudioLastSeenAtConfig;
+  ipAddress?: StudioIpAddressConfig;
+  tools?: {
+    exclude?: StudioToolId[];
+  };
+  events?: {
+    enabled?: boolean;
+    tableName?: string;
+    provider?: EventIngestionProvider;
+    client?: any;
+    clientType?: "postgres" | "prisma" | "drizzle" | "clickhouse" | "https" | "custom" | "sqlite" | "node-sqlite";
+    include?: AuthEventType[];
+    exclude?: AuthEventType[];
+    batchSize?: number;
+    flushInterval?: number;
+    retryOnError?: boolean;
+    liveMarquee?: LiveMarqueeConfig;
+    onEventIngest?: (event: AuthEvent) => void | Promise<void>;
+  };
+};
+```
+
+## Fields
+
+<ParamField path="auth" type="any" required>
+  Your Better Auth instance. This is the configured auth object from Better Auth.
+</ParamField>
+
+<ParamField path="basePath" type="string">
+  Base path for the Studio UI routes.
+  
+  **Default:** `/api/studio`
+</ParamField>
+
+<ParamField path="access" type="StudioAccessConfig">
+  Access control configuration for Studio. Controls who can access the Studio UI.
+  
+  See [StudioAccessConfig](/api/config/access-config) for details.
+</ParamField>
+
+<ParamField path="metadata" type="StudioMetadata">
+  Studio customization and branding metadata including title, logo, theme, and feature toggles.
+  
+  See [StudioMetadata](/api/config/metadata-config) for details.
+</ParamField>
+
+<ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+  Configuration for last-seen tracking. When enabled, Studio tracks when users were last active.
+  
+  <Expandable title="StudioLastSeenAtConfig fields">
+    <ResponseField name="enabled" type="boolean">
+      Enable last-seen tracking.
+      
+      **Default:** `false`
+    </ResponseField>
+    
+    <ResponseField name="columnName" type="string">
+      Column/field name in your user table (e.g., "lastSeenAt", "last_seen_at").
+      
+      **Default:** `"lastSeenAt"`
+      
+      **Note:** The column must exist in your user table. No plugin or additionalFields needed in Better Auth config - Studio injects the field into the user schema and updates it on sign-in/sign-up.
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="ipAddress" type="StudioIpAddressConfig">
+  IP geolocation configuration. When set, Studio uses this for Events and Sessions IP resolution.
+  
+  <Expandable title="Provider options">
+    **IPInfo Provider:**
+    ```typescript
+    {
+      provider: "ipinfo";
+      apiToken?: string;
+      baseUrl?: string;
+      endpoint?: "lite" | "lookup"; // Default: "lookup"
+    }
+    ```
+    - `endpoint`: "lite" for free tier (country/continent only), "lookup" for core/plus (city/region)
+    
+    **IPApi Provider:**
+    ```typescript
+    {
+      provider: "ipapi";
+      apiToken?: string;
+      baseUrl?: string;
+    }
+    ```
+    
+    **Static (MaxMind) Provider:**
+    ```typescript
+    {
+      provider: "static";
+      path: string; // Required: path to .mmdb file
+    }
+    ```
+    - Use a local MaxMind GeoLite2 (.mmdb) file
+    - `path`: Absolute or relative path from your project (e.g., "./data/GeoLite2-City.mmdb")
+  </Expandable>
+</ParamField>
+
+<ParamField path="tools" type="object">
+  Tools list configuration. When self-hosting, use `exclude` to hide tools from the UI (e.g., in production).
+  
+  **Default:** All tools are included
+  
+  <Expandable title="tools fields">
+    <ResponseField name="exclude" type="StudioToolId[]">
+      Array of tool IDs to exclude from the Tools page.
+      
+      **Available tool IDs:**
+      - `"test-oauth"`
+      - `"hash-password"`
+      - `"run-migration"`
+      - `"test-db"`
+      - `"validate-config"`
+      - `"health-check"`
+      - `"export-data"`
+      - `"jwt-decoder"`
+      - `"token-generator"`
+      - `"plugin-generator"`
+      - `"uuid-generator"`
+      - `"password-strength"`
+      - `"oauth-credentials"`
+      - `"secret-generator"`
+      
+      **Example:**
+      ```typescript
+      tools: { 
+        exclude: ['test-oauth', 'health-check'] 
+      }
+      ```
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="events" type="object">
+  Events tracking and ingestion configuration. Controls how authentication events are captured and stored.
+  
+  See [Events Configuration](/api/config/events-config) for full details.
+</ParamField>
+
+## Helper Function
+
+```typescript
+export function defineStudioConfig(config: StudioConfig): StudioConfig
+```
+
+Helper function to define Studio configuration with type safety and autocomplete.
+
+**Example:**
+```typescript
+import { defineStudioConfig } from "better-auth-studio";
+import { auth } from "./auth";
+
+export const studioConfig = defineStudioConfig({
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+  },
+  metadata: {
+    title: "My App Studio",
+    theme: "dark",
+  },
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+  },
+});
+```
+
+## Related Types
+
+- [StudioAccessConfig](/api/config/access-config) - Access control configuration
+- [StudioMetadata](/api/config/metadata-config) - Metadata and branding configuration
+- [Events Configuration](/api/config/events-config) - Events tracking configuration

@@ -1,0 +1,513 @@
+---
+title: 'Event Tracking'
+description: 'Monitor authentication events, user activity, and system events in real-time'
+icon: 'chart-line'
+---
+
+## Overview
+
+The Event Tracking section provides real-time monitoring of all authentication events in your Better Auth application. Track user sign-ups, logins, password changes, OAuth flows, organization activities, and more.
+
+<Info>
+Event tracking is only available in **self-hosted mode** and requires configuration in your `studio.config.ts`.
+</Info>
+
+## Setup
+
+Enable event tracking in your Studio configuration:
+
+### Configuration
+
+```typescript
+import type { StudioConfig } from 'better-auth-studio';
+import { auth } from './lib/auth';
+import { prisma } from './lib/prisma'; // or your database client
+
+const config: StudioConfig = {
+  auth,
+  basePath: '/api/studio',
+  events: {
+    enabled: true,
+    client: prisma,
+    clientType: 'prisma', // or 'drizzle'
+    tableName: 'auth_events',
+  }
+};
+
+export default config;
+```
+
+### Database Migration
+
+After enabling events, run your database migration:
+
+```bash
+# Prisma
+npx prisma migrate dev --name add_auth_events
+
+# Drizzle
+npx drizzle-kit push
+```
+
+<Warning>
+Events are **not available** in the cloud hosted version - only self-hosted deployments.
+</Warning>
+
+## Event Types
+
+Better Auth Studio tracks these event categories:
+
+### User Events
+
+<CardGroup cols={2}>
+  <Card title="user.joined" icon="user-plus">
+    New user registration
+  </Card>
+  <Card title="user.logged_in" icon="arrow-right-to-bracket">
+    Successful sign-in
+  </Card>
+  <Card title="user.logged_out" icon="arrow-right-from-bracket">
+    User logout
+  </Card>
+  <Card title="user.updated" icon="pen">
+    Profile update
+  </Card>
+  <Card title="user.email_verified" icon="envelope-circle-check">
+    Email verification completed
+  </Card>
+  <Card title="user.password_changed" icon="key">
+    Password update
+  </Card>
+  <Card title="user.banned" icon="ban">
+    User banned (admin plugin)
+  </Card>
+  <Card title="user.unbanned" icon="circle-check">
+    Ban removed
+  </Card>
+  <Card title="user.deleted" icon="trash">
+    Account deletion
+  </Card>
+</CardGroup>
+
+### Organization Events
+
+<CardGroup cols={2}>
+  <Card title="organization.created" icon="building">
+    New organization created
+  </Card>
+  <Card title="organization.updated" icon="pen-to-square">
+    Organization details changed
+  </Card>
+  <Card title="organization.deleted" icon="building-circle-xmark">
+    Organization removed
+  </Card>
+  <Card title="member.added" icon="user-plus">
+    Member joined organization
+  </Card>
+  <Card title="member.removed" icon="user-minus">
+    Member left organization
+  </Card>
+  <Card title="member.role_changed" icon="user-gear">
+    Member role updated
+  </Card>
+</CardGroup>
+
+### Team Events
+
+<CardGroup cols={2}>
+  <Card title="team.created" icon="users">
+    New team created
+  </Card>
+  <Card title="team.updated" icon="users-gear">
+    Team details modified
+  </Card>
+  <Card title="team.deleted" icon="users-slash">
+    Team removed
+  </Card>
+  <Card title="team.member.added" icon="user-plus">
+    Member added to team
+  </Card>
+  <Card title="team.member.removed" icon="user-minus">
+    Member removed from team
+  </Card>
+</CardGroup>
+
+### Session & Security Events
+
+<CardGroup cols={2}>
+  <Card title="session.created" icon="clock">
+    New session established
+  </Card>
+  <Card title="password.reset_requested" icon="envelope">
+    Password reset email sent
+  </Card>
+  <Card title="password.reset_completed" icon="check">
+    Password successfully reset
+  </Card>
+  <Card title="oauth.linked" icon="link">
+    OAuth account linked
+  </Card>
+  <Card title="oauth.unlinked" icon="link-slash">
+    OAuth account unlinked
+  </Card>
+  <Card title="oauth.sign_in" icon="right-to-bracket">
+    OAuth authentication
+  </Card>
+</CardGroup>
+
+### Invitation Events
+
+<CardGroup cols={2}>
+  <Card title="invitation.created" icon="envelope">
+    Invitation sent
+  </Card>
+  <Card title="invitation.accepted" icon="check">
+    Invitation accepted
+  </Card>
+  <Card title="invitation.rejected" icon="xmark">
+    Invitation declined
+  </Card>
+  <Card title="invitation.cancelled" icon="ban">
+    Invitation revoked
+  </Card>
+</CardGroup>
+
+## Events Dashboard
+
+### Overview Stats
+
+At the top of the Events page, see real-time statistics:
+
+- **Success Events** - Total successful operations (green)
+- **Failed Events** - Total failures and errors (red)
+- **Warning Events** - Events that need attention (yellow)
+- **Info Events** - General informational events (blue)
+
+### Event Activity Grid
+
+Visual GitHub-style contribution graph showing:
+
+- **Last 53 weeks** of event activity
+- **Daily event counts** - Hover to see details
+- **Color intensity** - More events = darker shade
+- **Click a cell** - See events for that specific day
+- **Category breakdown** - Events grouped by type (User, Organization, Team, etc.)
+
+<Info>
+The activity grid is hidden on mobile devices and visible on desktop/tablet screens.
+</Info>
+
+### Activity Details Panel
+
+When you click a day in the activity grid:
+
+1. **Total events** for selected day
+2. **Status breakdown** - Success, Failed, Warning, Info counts
+3. **By category** - Events grouped by:
+   - User events
+   - Organization events
+   - Team events
+   - Session events
+   - OAuth events
+   - Invitation events
+4. **Quick filter** - Click category to filter main list
+
+## Event Workflows
+
+<Steps>
+  <Step title="View Recent Events">
+    1. Navigate to Events page
+    2. See chronological list of latest events
+    3. Events auto-refresh every 2 seconds (configurable)
+    4. New events appear at the top with highlight animation
+  </Step>
+
+  <Step title="Search Events">
+    1. Use search bar to find events by:
+       - Event type (e.g., "user.joined")
+       - User ID
+       - Event message
+    2. Results update as you type
+  </Step>
+
+  <Step title="Filter Events">
+    1. Click **Add Filter** dropdown
+    2. Choose filter type:
+       - **Event Type** - Select specific event types
+       - **Timestamp** - Filter by date range
+    3. Configure filter criteria
+    4. Apply multiple filters
+    5. Click **Clear all** to reset
+  </Step>
+
+  <Step title="View Event Details">
+    1. Click the View icon (eye) on any event
+    2. Modal shows complete event information:
+       - Event ID (copyable)
+       - User ID (copyable)
+       - Session ID (copyable, if applicable)
+       - Organization ID (copyable, if applicable)
+       - IP address and location
+       - User agent string
+       - Full metadata
+       - Timestamps
+  </Step>
+</Steps>
+
+## Event Filtering
+
+### By Event Type
+
+Filter events to specific types:
+
+<Steps>
+  <Step title="Add Event Type Filter">
+    Click **Add Filter** → **Event Type**
+  </Step>
+
+  <Step title="Select Event Categories">
+    Choose from organized categories:
+    - **User** - All user events
+    - **Organization** - Organization events
+    - **Member** - Membership events
+    - **Session** - Session creation
+    - **Password** - Password operations
+    - **OAuth** - OAuth events
+    - **Team** - Team management
+    - **Invitation** - Invitation lifecycle
+    - **Phone Number** - SMS events
+  </Step>
+
+  <Step title="Choose Specific Events">
+    Within each category, select individual event types:
+    - Check boxes to include events
+    - Uncheck to exclude
+    - Categories expand/collapse for easier selection
+  </Step>
+</Steps>
+
+### By Timestamp
+
+Filter events by date range:
+
+1. Click **Add Filter** → **Timestamp**
+2. Select **From** date using calendar picker
+3. Select **To** date
+4. Only events within range are shown
+
+### Quick Filters
+
+Use the top filter dropdown for common queries:
+
+- **All** - Show all events
+- **Success** - Only successful events
+- **Failed** - Only failed events
+- **Info** - Informational events
+- **Warning** - Events with warnings
+
+## Event List
+
+### Event Display
+
+Each event shows:
+
+- **Event Icon** - Visual indicator of event type:
+  - User icon for user events
+  - Building icon for organizations
+  - Lock icon for security events
+  - Check for success, X for failures
+- **Event Type** - e.g., `user.logged_in`
+- **Event Message** - Human-readable description
+- **Timestamp** - Precise date and time (with milliseconds)
+- **Status Badge** - Success (green), Failed (red), Warning (yellow), Info (blue)
+
+### Sorting
+
+Sort events by timestamp:
+
+- **Newest First** (default) - Most recent at top
+- **Oldest First** - Chronological order
+
+Click the sort button in the "Timestamp" column header.
+
+### Real-time Updates
+
+Events update automatically:
+
+- **Polling interval** - Checks for new events every 2 seconds (configurable)
+- **New event animation** - Highlighted with subtle flash
+- **Auto-scroll disabled** - Stay on current position
+- **Manual refresh** - Reload page to force update
+
+<Note>
+Configure polling interval in your `studio.config.ts`:
+```typescript
+{
+  liveMarquee: {
+    pollInterval: 3000 // milliseconds
+  }
+}
+```
+</Note>
+
+## Event Details Modal
+
+Click View on any event to see comprehensive details:
+
+<Accordion title="Event Information">
+- **Event ID** - Unique identifier (copyable)
+- **Event Type** - Full event type string
+- **Status** - Success, Failed, Warning, or Info
+- **Message** - Detailed event description
+- **Timestamp** - Creation date/time
+</Accordion>
+
+<Accordion title="User Information">
+- **User ID** - Associated user (copyable)
+- **Session ID** - Related session (copyable)
+- **Organization ID** - If organization event (copyable)
+</Accordion>
+
+<Accordion title="Context Data">
+- **IP Address** - Client IP with geolocation
+- **Location** - City, Region, Country with flag
+- **User Agent** - Browser and device information
+- **Source** - API or App origin
+</Accordion>
+
+<Accordion title="Metadata">
+- **Custom Fields** - Event-specific data
+- **Error Details** - If event failed
+- **Previous Values** - For update events
+- **Additional Context** - Extra information
+</Accordion>
+
+## IP Geolocation in Events
+
+When IP geolocation is configured (see [Session Management](/features/session-management#ip-geolocation)), events show:
+
+- **IP Address** - Source IP for the event
+- **Geographic Location** - Resolved city, region, country
+- **Country Flag** - Visual identifier
+
+<Info>
+IP resolution is asynchronous. You may see "Resolving..." briefly while location is fetched.
+</Info>
+
+## Load More Events
+
+Events are loaded in batches:
+
+1. Initial load shows 50 most recent events
+2. Scroll to bottom to see **Load More** button
+3. Click to fetch next 50 events
+4. Repeat to load historical events
+5. Maximum 500 events loaded in UI at once
+
+<Warning>
+Loading many events can impact performance. Use filters to narrow results.
+</Warning>
+
+## Best Practices
+
+<Steps>
+  <Step title="Monitor Failed Events">
+    - Filter to "Failed" status daily
+    - Investigate patterns in failures
+    - Alert on critical failures (e.g., login failures)
+  </Step>
+
+  <Step title="Track User Activity">
+    - Use event grid to see activity trends
+    - Identify peak usage times
+    - Detect unusual activity spikes
+  </Step>
+
+  <Step title="Audit Security Events">
+    - Monitor password changes
+    - Track OAuth linking/unlinking
+    - Watch for suspicious IPs
+    - Review session creation patterns
+  </Step>
+
+  <Step title="Organization Monitoring">
+    - Track organization growth
+    - Monitor member changes
+    - Review invitation acceptance rates
+  </Step>
+
+  <Step title="Clean Old Events">
+    - Set up periodic cleanup of old events
+    - Archive events beyond retention period
+    - Balance storage vs. audit needs
+  </Step>
+</Steps>
+
+## Event Retention
+
+Consider your event retention strategy:
+
+- **Short-term** (7-30 days) - Recent activity, debugging
+- **Medium-term** (3-6 months) - Compliance, analytics
+- **Long-term** (1+ years) - Legal requirements, historical analysis
+
+<Note>
+Implement automatic cleanup in your application:
+```sql
+DELETE FROM auth_events 
+WHERE timestamp < NOW() - INTERVAL '90 days';
+```
+</Note>
+
+## Troubleshooting
+
+<Accordion title="Events not appearing">
+Check event configuration:
+
+1. Verify `events.enabled: true` in `studio.config.ts`
+2. Confirm database client and table name are correct
+3. Run migrations to create events table
+4. Check database permissions
+5. Verify self-hosted deployment (events don't work in cloud mode)
+</Accordion>
+
+<Accordion title="Events showing in cloud version">
+Event tracking is **only available in self-hosted mode**. You'll see a setup message explaining this limitation.
+</Accordion>
+
+<Accordion title="Real-time updates not working">
+- Check browser console for WebSocket errors
+- Verify polling interval configuration
+- Ensure network allows API polling
+- Try manual page refresh
+</Accordion>
+
+<Accordion title="Location not resolving">
+- Configure `ipAddress` provider in studio config
+- Verify API token (for IPInfo)
+- Check API rate limits
+- See [IP Geolocation setup](/features/session-management#ip-geolocation)
+</Accordion>
+
+<Accordion title="Too many events loading slowly">
+- Use filters to reduce event count
+- Limit time range with timestamp filter
+- Filter by specific event types
+- Consider database indexing on timestamp and type columns
+</Accordion>
+
+## API Reference
+
+Event operations use these endpoints:
+
+- `GET /api/events` - List events with pagination
+- `GET /api/events/count` - Get event counts and statistics
+- `GET /api/events/status` - Check if events are enabled
+- `POST /api/geo/resolve` - Resolve IP to location
+
+## Related Features
+
+- **[Session Management](/features/session-management)** - Sessions create session.created events
+- **[User Management](/features/user-management)** - User actions generate events
+- **[Organization Management](/features/organization-management)** - Organization events tracked
+- **[Developer Tools](/features/developer-tools)** - OAuth tests generate events

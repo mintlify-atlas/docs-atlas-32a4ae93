@@ -1,0 +1,491 @@
+---
+title: Express Setup
+description: Self-host Better Auth Studio with Express.js
+---
+
+Learn how to self-host Better Auth Studio in your Express.js application.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- An Express.js application
+- Better Auth configured in your project
+- `better-auth-studio` installed as a dependency
+
+## Installation
+
+<Steps>
+
+<Step title="Install Dependencies">
+
+<Warning>
+  Install as a **regular dependency** (not devDependency) for production deployments.
+</Warning>
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio express
+```
+
+```bash pnpm
+pnpm add better-auth-studio express
+```
+
+```bash yarn
+yarn add better-auth-studio express
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Initialize Configuration">
+
+Run the init command to create your configuration file:
+
+```bash
+pnpx better-auth-studio init
+```
+
+This creates a `studio.config.ts` file:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Admin Dashboard",
+    theme: "dark",
+  },
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@example.com"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Add Studio Handler to Express App">
+
+Integrate the studio handler into your Express application:
+
+```typescript server.ts
+import express from "express";
+import { toNodeHandler } from "better-auth/node";
+import { betterAuthStudio } from "better-auth-studio/express";
+import { auth } from "./auth";
+import studioConfig from "./studio.config";
+
+const app = express();
+
+// Required: Parse JSON request bodies
+app.use(express.json());
+
+// Mount Better Auth Studio
+app.use("/api/studio", betterAuthStudio(studioConfig));
+
+// Mount Better Auth
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Start server
+app.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
+  console.log("Studio available at http://localhost:3000/api/studio");
+});
+```
+
+<Note>
+  The `express.json()` middleware is required for the studio to parse request bodies.
+</Note>
+
+</Step>
+
+<Step title="Access the Studio">
+
+Start your Express server:
+
+```bash
+node server.ts
+# or with ts-node
+ts-node server.ts
+```
+
+Access the studio at:
+
+```
+http://localhost:3000/api/studio
+```
+
+</Step>
+
+</Steps>
+
+## How It Works
+
+The Express adapter (`better-auth-studio/express`) provides a `betterAuthStudio()` function that:
+
+1. **Returns an Express Router** - Creates a router that handles all studio routes
+2. **Converts requests** - Transforms Express requests to universal format
+3. **Handles all HTTP methods** - Automatically handles GET, POST, PUT, DELETE, PATCH via `router.all("*")`
+4. **Injects hooks** - Automatically injects last-seen tracking and event hooks if configured
+5. **Error handling** - Passes errors to Express error handlers via `next(error)`
+
+### Adapter Implementation
+
+Here's how the Express adapter works internally:
+
+```typescript src/adapters/express.ts
+import type { Router as ExpressRouter, NextFunction, Request, Response } from "express";
+import { Router } from "express";
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig, UniversalRequest, UniversalResponse } from "../types/handler.js";
+import { injectEventHooks, injectLastSeenAtHooks } from "../utils/hook-injector.js";
+
+export function betterAuthStudio(config: StudioConfig): ExpressRouter {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  const router = Router();
+
+  router.all("*", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const universalReq = convertExpressToUniversal(req);
+      const universalRes = await handleStudioRequest(universalReq, config);
+      sendExpressResponse(res, universalRes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  return router;
+}
+
+function convertExpressToUniversal(req: Request): UniversalRequest {
+  return {
+    url: req.originalUrl,
+    method: req.method,
+    headers: req.headers as Record<string, string>,
+    body: req.body,
+  };
+}
+
+function sendExpressResponse(res: Response, universal: UniversalResponse): void {
+  res.status(universal.status);
+
+  Object.entries(universal.headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  if (Buffer.isBuffer(universal.body)) {
+    res.end(universal.body);
+  } else {
+    res.send(universal.body);
+  }
+}
+```
+
+## Configuration Examples
+
+### Basic Setup
+
+Minimal Express configuration:
+
+```typescript server.ts
+import express from "express";
+import { betterAuthStudio } from "better-auth-studio/express";
+import { auth } from "./auth";
+
+const app = express();
+
+app.use(express.json());
+app.use("/api/studio", betterAuthStudio({ auth, basePath: "/api/studio" }));
+
+app.listen(3000);
+```
+
+### With Access Control
+
+Restrict access to admin users:
+
+```typescript server.ts
+import express from "express";
+import { betterAuthStudio } from "better-auth-studio/express";
+import { auth } from "./auth";
+import studioConfig from "./studio.config";
+
+const app = express();
+
+app.use(express.json());
+app.use("/api/studio", betterAuthStudio(studioConfig));
+
+app.listen(3000);
+```
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@company.com"],
+  },
+};
+
+export default config;
+```
+
+### With Custom Middleware
+
+Add custom authentication or logging middleware:
+
+```typescript server.ts
+import express from "express";
+import { betterAuthStudio } from "better-auth-studio/express";
+import { auth } from "./auth";
+import studioConfig from "./studio.config";
+
+const app = express();
+
+app.use(express.json());
+
+// Custom logging middleware for studio access
+app.use("/api/studio", (req, res, next) => {
+  console.log(`[Studio] ${req.method} ${req.path}`);
+  next();
+});
+
+// Mount studio
+app.use("/api/studio", betterAuthStudio(studioConfig));
+
+app.listen(3000);
+```
+
+### Complete Server Example
+
+Full Express server with Better Auth and Studio:
+
+```typescript server.ts
+import express from "express";
+import cors from "cors";
+import { toNodeHandler } from "better-auth/node";
+import { betterAuthStudio } from "better-auth-studio/express";
+import { auth } from "./auth";
+import studioConfig from "./studio.config";
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// Better Auth Studio (must be before auth routes)
+app.use("/api/studio", betterAuthStudio(studioConfig));
+
+// Better Auth
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Your API routes
+app.get("/api/hello", (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+// Error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Server error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Studio available at http://localhost:${PORT}/api/studio`);
+});
+```
+
+## TypeScript Setup
+
+For TypeScript projects, ensure proper configuration:
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+```
+
+Install type definitions:
+
+```bash
+npm install --save-dev @types/express @types/node
+```
+
+## Custom Base Path
+
+Mount the studio at any path:
+
+<Tabs>
+  <Tab title="/admin">
+    ```typescript studio.config.ts
+    const config: StudioConfig = {
+      auth,
+      basePath: "/admin",
+      // ... other options
+    };
+    ```
+
+    ```typescript server.ts
+    app.use("/admin", betterAuthStudio(studioConfig));
+    ```
+
+    Access at: `http://localhost:3000/admin`
+  </Tab>
+
+  <Tab title="/dashboard/admin">
+    ```typescript studio.config.ts
+    const config: StudioConfig = {
+      auth,
+      basePath: "/dashboard/admin",
+      // ... other options
+    };
+    ```
+
+    ```typescript server.ts
+    app.use("/dashboard/admin", betterAuthStudio(studioConfig));
+    ```
+
+    Access at: `http://localhost:3000/dashboard/admin`
+  </Tab>
+</Tabs>
+
+## Deployment
+
+### Using Node.js
+
+Deploy your Express app with Node.js:
+
+```bash
+# Build TypeScript
+npm run build
+
+# Start production server
+NODE_ENV=production node dist/server.js
+```
+
+### Using Docker
+
+Create a Dockerfile:
+
+```dockerfile Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["node", "dist/server.js"]
+```
+
+Build and run:
+
+```bash
+docker build -t my-app .
+docker run -p 3000:3000 my-app
+```
+
+### Using PM2
+
+Run with PM2 for process management:
+
+```bash
+npm install -g pm2
+pm2 start dist/server.js --name "my-app"
+pm2 save
+pm2 startup
+```
+
+## Troubleshooting
+
+### JSON Parsing Errors
+
+If you get JSON parsing errors, ensure `express.json()` is used before the studio:
+
+```typescript
+app.use(express.json()); // Must be before studio
+app.use("/api/studio", betterAuthStudio(studioConfig));
+```
+
+### CORS Issues
+
+If accessing from a different origin, enable CORS:
+
+```bash
+npm install cors
+```
+
+```typescript
+import cors from "cors";
+
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
+```
+
+### Route Conflicts
+
+Ensure the studio is mounted before other catch-all routes:
+
+```typescript
+// ✅ Correct order
+app.use("/api/studio", betterAuthStudio(studioConfig));
+app.use("/api/*", otherHandler);
+
+// ❌ Wrong order - studio won't work
+app.use("/api/*", otherHandler);
+app.use("/api/studio", betterAuthStudio(studioConfig));
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/self-hosting/configuration">
+    Learn about all configuration options
+  </Card>
+  <Card title="Next.js Setup" icon="react" href="/self-hosting/nextjs">
+    Set up with Next.js
+  </Card>
+</CardGroup>

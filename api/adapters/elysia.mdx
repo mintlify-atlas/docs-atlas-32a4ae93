@@ -1,0 +1,251 @@
+---
+title: Elysia Adapter
+description: API reference for the Elysia framework adapter
+---
+
+# Elysia Adapter
+
+Adapter for integrating Better Auth Studio with Elysia applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+```
+
+## betterAuthStudio()
+
+Creates an Elysia-compatible handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (context: Context) => Promise<Response | any>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(context: Context) => Promise<Response | any>">
+  An async function that accepts an Elysia Context and returns a Response or serializable value
+</ResponseField>
+
+## Usage
+
+### Basic Setup
+
+```typescript
+import { Elysia } from 'elysia';
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+import { auth } from './auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const studioHandler = betterAuthStudio(studioConfig);
+
+const app = new Elysia()
+  .all('/api/studio/*', studioHandler)
+  .listen(3000);
+
+console.log(`Server running at http://localhost:3000`);
+console.log(`Studio available at http://localhost:3000/api/studio`);
+```
+
+### With Bun Runtime
+
+```typescript
+import { Elysia } from 'elysia';
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+import { auth } from './auth';
+
+const app = new Elysia()
+  .all('/api/studio/*', betterAuthStudio({ auth }))
+  .listen(3000);
+
+console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
+```
+
+### With Plugins
+
+```typescript
+import { Elysia } from 'elysia';
+import { cors } from '@elysiajs/cors';
+import { swagger } from '@elysiajs/swagger';
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+import { auth } from './auth';
+
+const app = new Elysia()
+  .use(cors())
+  .use(swagger())
+  .all('/api/studio/*', betterAuthStudio({ auth }))
+  .listen(3000);
+```
+
+### With Type Safety
+
+```typescript
+import { Elysia } from 'elysia';
+import type { Context } from 'elysia';
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+import { auth } from './auth';
+
+const studioHandler: (context: Context) => Promise<Response | any> = 
+  betterAuthStudio({ auth });
+
+const app = new Elysia()
+  .all('/api/studio/*', studioHandler)
+  .listen(3000);
+```
+
+### With Access Control
+
+```typescript
+import { Elysia } from 'elysia';
+import { betterAuthStudio } from 'better-auth-studio/elysia';
+import { auth } from './auth';
+
+const app = new Elysia()
+  .all('/api/studio/*', betterAuthStudio({
+    auth,
+    access: {
+      roles: ['admin'],
+      allowEmails: ['admin@example.com']
+    }
+  }))
+  .listen(3000);
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Elysia Context to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // URL pathname + search params
+  method: string;        // context.request.method
+  headers: Record<string, string>; // context.request.headers
+  body?: any;            // Parsed from context.body or context.request
+};
+```
+
+### Body Handling
+
+The adapter attempts to read the body from:
+1. `context.body` (parsed by Elysia)
+2. `context.query` (query parameters)
+3. `context.request` (raw request object)
+
+### Content Type Handling
+
+The adapter automatically detects and parses:
+- `application/json` → `context.request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### Response Handling
+
+The adapter returns appropriate Elysia response types:
+- JSON content → Parsed JSON object
+- HTML content → Response object
+- Text content → String
+- Buffer content → Response object
+
+Elysia automatically serializes these values based on content type.
+
+### Status and Headers
+
+The adapter sets status and headers using Elysia's context:
+
+```typescript
+context.set.status = 200;
+context.set.headers['Content-Type'] = 'application/json';
+```
+
+### Error Handling
+
+Errors are caught and returned as JSON objects:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## Elysia Features
+
+### Pattern Matching
+
+Elysia supports wildcard routes:
+
+```typescript
+app.all('/api/studio/*', handler); // Matches all paths under /api/studio
+```
+
+### High Performance
+
+Elysia is built for speed with:
+- Bun runtime optimization
+- Zero-cost abstractions
+- Efficient request parsing
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

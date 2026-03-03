@@ -1,0 +1,233 @@
+---
+title: Access Control
+description: Configure role-based access control and email allowlists for Better Auth Studio
+---
+
+Access control restricts who can access your self-hosted Better Auth Studio instance. This is essential for production deployments.
+
+<Warning>
+Access control only applies to **self-hosted** instances. The standalone CLI version (`pnpm better-auth-studio start`) does not enforce access restrictions.
+</Warning>
+
+## Configuration
+
+Access control is configured in your `studio.config.ts` file:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin", "superadmin"],
+    allowEmails: ["admin@example.com", "team@example.com"],
+    sessionDuration: 3600000, // 1 hour in milliseconds
+    secret: process.env.STUDIO_SECRET,
+  },
+};
+
+export default config;
+```
+
+## Access Options
+
+<ParamField path="access.roles" type="string[]">
+  Array of user roles that are allowed to access Studio. Users must have one of these roles in their Better Auth user record.
+  
+  ```typescript
+  access: {
+    roles: ["admin", "superadmin"]
+  }
+  ```
+</ParamField>
+
+<ParamField path="access.allowEmails" type="string[]">
+  Array of email addresses that are allowed to access Studio. Only users with these email addresses can authenticate.
+  
+  ```typescript
+  access: {
+    allowEmails: ["admin@example.com", "team@example.com"]
+  }
+  ```
+</ParamField>
+
+<ParamField path="access.sessionDuration" type="number">
+  Session duration in milliseconds. Controls how long admin sessions remain valid before requiring re-authentication.
+  
+  Default: `3600000` (1 hour)
+  
+  ```typescript
+  access: {
+    sessionDuration: 7200000 // 2 hours
+  }
+  ```
+</ParamField>
+
+<ParamField path="access.secret" type="string">
+  Secret key used for signing admin session tokens. Should be a strong, random string stored in environment variables.
+  
+  ```typescript
+  access: {
+    secret: process.env.STUDIO_SECRET
+  }
+  ```
+</ParamField>
+
+## Access Control Methods
+
+### Role-Based Access
+
+Restrict access by user roles. Users must have one of the specified roles in their user record:
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin", "moderator"],
+  },
+};
+```
+
+<Info>
+Roles are checked against the `role` field in your Better Auth user table. Ensure your user schema includes this field.
+</Info>
+
+### Email Allowlist
+
+Restrict access to specific email addresses:
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    allowEmails: [
+      "admin@company.com",
+      "owner@company.com",
+      "security@company.com"
+    ],
+  },
+};
+```
+
+### Combined Access Control
+
+Use both roles and email allowlist for maximum security:
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@company.com", "owner@company.com"],
+  },
+};
+```
+
+<Note>
+When both `roles` and `allowEmails` are configured, users must satisfy **both** conditions to gain access.
+</Note>
+
+## TypeScript Type Definition
+
+```typescript
+type StudioAccessConfig = {
+  /** Array of allowed user roles */
+  roles?: string[];
+  
+  /** Array of admin email addresses */
+  allowEmails?: string[];
+  
+  /** Session duration in milliseconds */
+  sessionDuration?: number;
+  
+  /** Secret for signing admin session tokens */
+  secret?: string;
+};
+```
+
+## Environment Variables
+
+Store sensitive configuration in environment variables:
+
+```bash .env
+STUDIO_SECRET=your-strong-random-secret-here
+```
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+    secret: process.env.STUDIO_SECRET,
+  },
+};
+```
+
+## Security Best Practices
+
+<Warning>
+**Production Deployment Checklist:**
+
+- Always configure access control for production deployments
+- Use a strong, randomly generated `secret`
+- Store secrets in environment variables, never in source code
+- Use HTTPS for all Studio traffic
+- Regularly review and update the allowlist
+- Set appropriate session durations (shorter is more secure)
+- Enable audit logging if available
+</Warning>
+
+### Generate a Strong Secret
+
+```bash
+# Generate a random secret
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### Recommended Session Durations
+
+- **High Security**: 30 minutes (`1800000` ms)
+- **Standard**: 1 hour (`3600000` ms)
+- **Convenience**: 4 hours (`14400000` ms)
+
+## Authentication Flow
+
+When a user attempts to access Studio:
+
+1. Studio checks if an admin session exists
+2. If no session, redirects to login
+3. User authenticates with Better Auth
+4. Studio validates the user's role and/or email
+5. If authorized, creates an admin session
+6. User gains access to Studio
+
+## Troubleshooting
+
+### Access Denied Error
+
+If you're seeing "Access Denied" errors:
+
+1. Verify the user's email is in `allowEmails` (if configured)
+2. Check the user's role matches one in `roles` (if configured)
+3. Ensure the user has successfully authenticated with Better Auth
+4. Check browser console for specific error messages
+
+### Session Expiration
+
+If sessions expire too quickly or slowly:
+
+- Adjust `sessionDuration` in your config
+- Clear browser cookies and re-authenticate
+- Verify system clock is synchronized
+
+## Related
+
+- [Self-Hosting Setup](/self-hosting/setup)
+- [Metadata Configuration](/configuration/metadata)
+- [IP Geolocation](/configuration/ip-geolocation)

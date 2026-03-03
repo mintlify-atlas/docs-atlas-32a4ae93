@@ -1,0 +1,269 @@
+---
+title: Astro Adapter
+description: API reference for the Astro framework adapter
+---
+
+# Astro Adapter
+
+Adapter for integrating Better Auth Studio with Astro applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/astro';
+```
+
+## betterAuthStudio()
+
+Creates an Astro-compatible API route handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): (ctx: { request: Request }) => Promise<Response>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="(ctx: { request: Request }) => Promise<Response>">
+  An async function that accepts an Astro context object and returns a Response
+</ResponseField>
+
+## Usage
+
+### Catch-all API Route
+
+Create a catch-all endpoint to handle all studio requests:
+
+```typescript
+// pages/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/astro';
+import { auth } from '~/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+import type { APIRoute } from 'astro';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export const ALL: APIRoute = async (ctx) => {
+  return handler(ctx);
+};
+```
+
+### Simplified Version
+
+```typescript
+// pages/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/astro';
+import { auth } from '~/lib/auth';
+import type { APIRoute } from 'astro';
+
+const handler = betterAuthStudio({ auth });
+
+export const ALL: APIRoute = handler;
+```
+
+### With Access Control
+
+```typescript
+// pages/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/astro';
+import { auth } from '~/lib/auth';
+import type { APIRoute } from 'astro';
+
+const handler = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com']
+  }
+});
+
+export const ALL: APIRoute = handler;
+```
+
+### With Custom Middleware
+
+```typescript
+// pages/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/astro';
+import { auth } from '~/lib/auth';
+import type { APIRoute, APIContext } from 'astro';
+
+const studioHandler = betterAuthStudio({ auth });
+
+export const ALL: APIRoute = async (ctx: APIContext) => {
+  // Custom middleware logic
+  console.log(`Studio request: ${ctx.request.method} ${ctx.url}`);
+  
+  // Call studio handler
+  const response = await studioHandler(ctx);
+  
+  console.log(`Studio response: ${response.status}`);
+  return response;
+};
+```
+
+### Separate HTTP Methods
+
+You can also export individual HTTP method handlers:
+
+```typescript
+// pages/api/studio/[...all].ts
+import { betterAuthStudio } from 'better-auth-studio/astro';
+import { auth } from '~/lib/auth';
+import type { APIRoute } from 'astro';
+
+const handler = betterAuthStudio({ auth });
+
+export const GET: APIRoute = handler;
+export const POST: APIRoute = handler;
+export const PUT: APIRoute = handler;
+export const DELETE: APIRoute = handler;
+export const PATCH: APIRoute = handler;
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Astro context objects to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // ctx.request.method
+  headers: Record<string, string>; // ctx.request.headers
+  body?: any;            // Parsed from ctx.request
+};
+```
+
+### Base Path Handling
+
+The adapter automatically strips the base path from URLs:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Content Type Handling
+
+The adapter handles multiple content types:
+- `application/json` → `ctx.request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## Astro API Routes
+
+### ALL Handler
+
+The `ALL` export handles all HTTP methods:
+
+```typescript
+export const ALL: APIRoute = handler;
+```
+
+This is equivalent to:
+
+```typescript
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;
+```
+
+### File Location
+
+API routes must be placed in the `pages/api/` directory:
+
+```
+pages/api/studio/[...all].ts → /api/studio/*
+```
+
+## File Structure
+
+```
+project/
+├── src/
+│   ├── pages/
+│   │   └── api/
+│   │       └── studio/
+│   │           └── [...all].ts
+│   └── lib/
+│       └── auth.ts
+└── astro.config.mjs
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

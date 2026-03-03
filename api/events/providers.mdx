@@ -1,0 +1,146 @@
+---
+title: Event Ingestion Providers
+description: Custom event ingestion provider interface for Better Auth Studio
+---
+
+## EventIngestionProvider
+
+The `EventIngestionProvider` interface defines the contract for storing and querying authentication events.
+
+```typescript
+interface EventIngestionProvider {
+  ingest(event: AuthEvent): Promise<void>;
+  ingestBatch?(events: AuthEvent[]): Promise<void>;
+  query?(options: EventQueryOptions): Promise<EventQueryResult>;
+  count?(): Promise<number>;
+  getStats?(): Promise<EventStats>;
+  healthCheck?(): Promise<boolean>;
+  shutdown?(): Promise<void>;
+}
+```
+
+### Methods
+
+<ParamField path="ingest" type="(event: AuthEvent) => Promise<void>" required>
+  Ingest a single authentication event. This is the only required method.
+  
+  **Parameters:**
+  - `event`: The `AuthEvent` object to store
+</ParamField>
+
+<ParamField path="ingestBatch" type="(events: AuthEvent[]) => Promise<void>">
+  Ingest multiple events in a single operation for better performance.
+  
+  **Parameters:**
+  - `events`: Array of `AuthEvent` objects to store
+</ParamField>
+
+<ParamField path="query" type="(options: EventQueryOptions) => Promise<EventQueryResult>">
+  Query events with filtering, pagination, and sorting.
+  
+  **Parameters:**
+  - `options`: Query options including filters, limit, offset, and sort order
+  
+  **Returns:**
+  - Promise resolving to `EventQueryResult` with events and pagination info
+</ParamField>
+
+<ParamField path="count" type="() => Promise<number>">
+  Get the total count of events in storage.
+  
+  **Returns:**
+  - Promise resolving to the total number of events
+</ParamField>
+
+<ParamField path="getStats" type="() => Promise<EventStats>">
+  Get statistical breakdown of events by severity.
+  
+  **Returns:**
+  - Promise resolving to `EventStats` with counts by severity level
+</ParamField>
+
+<ParamField path="healthCheck" type="() => Promise<boolean>">
+  Check if the provider is healthy and can accept events.
+  
+  **Returns:**
+  - Promise resolving to `true` if healthy, `false` otherwise
+</ParamField>
+
+<ParamField path="shutdown" type="() => Promise<void>">
+  Gracefully shutdown the provider, flushing any pending events.
+</ParamField>
+
+## Custom Provider Example
+
+You can implement a custom provider for any storage backend:
+
+```typescript
+import type { EventIngestionProvider, AuthEvent } from "better-auth-studio";
+
+const customProvider: EventIngestionProvider = {
+  async ingest(event: AuthEvent) {
+    // Store event in your custom backend
+    await myDatabase.events.create({
+      id: event.id,
+      type: event.type,
+      timestamp: event.timestamp,
+      status: event.status,
+      userId: event.userId,
+      metadata: event.metadata,
+      // ... other fields
+    });
+  },
+
+  async ingestBatch(events: AuthEvent[]) {
+    // Batch insert for better performance
+    await myDatabase.events.createMany(events);
+  },
+
+  async query(options) {
+    const { limit = 20, offset = 0, type, userId, sort = "desc" } = options;
+    
+    const query = myDatabase.events.find({
+      ...(type && { type }),
+      ...(userId && { userId }),
+    })
+      .sort({ timestamp: sort === "desc" ? -1 : 1 })
+      .skip(offset)
+      .limit(limit + 1);
+
+    const results = await query.exec();
+    const hasMore = results.length > limit;
+    const events = results.slice(0, limit);
+
+    return {
+      events,
+      hasMore,
+      nextCursor: hasMore ? events[events.length - 1].id : null,
+    };
+  },
+
+  async healthCheck() {
+    try {
+      await myDatabase.ping();
+      return true;
+    } catch {
+      return false;
+    }
+  },
+};
+
+export default customProvider;
+```
+
+## Using a Custom Provider
+
+```typescript
+import { defineStudioConfig } from "better-auth-studio";
+import customProvider from "./custom-provider";
+
+export const studioConfig = defineStudioConfig({
+  events: {
+    enabled: true,
+    provider: customProvider,
+  },
+});
+```

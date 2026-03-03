@@ -1,0 +1,607 @@
+---
+title: Custom Branding
+description: Customize Better Auth Studio appearance with logos, colors, themes, and metadata
+---
+
+## Overview
+
+Better Auth Studio supports extensive customization through the `metadata` configuration. Personalize the studio to match your brand identity when self-hosting.
+
+<Note>
+  **Self-Hosting Only:** Custom branding is available when self-hosting the studio. The CLI version uses default branding.
+</Note>
+
+## StudioMetadata Type
+
+The complete metadata configuration interface:
+
+```typescript
+type StudioMetadata = {
+  title?: string;
+  logo?: string;
+  favicon?: string;
+  company?: {
+    name?: string;
+    website?: string;
+    supportEmail?: string;
+  };
+  theme?: "dark" | "light" | "auto";
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  features?: {
+    users?: boolean;
+    sessions?: boolean;
+    organizations?: boolean;
+    analytics?: boolean;
+    tools?: boolean;
+    security?: boolean;
+  };
+  links?: Array<{ label: string; url: string }>;
+  custom?: Record<string, any>;
+};
+```
+
+## Basic Configuration
+
+### Title Customization
+
+Set a custom title for your studio:
+
+```typescript
+// studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "My Company Admin Dashboard",
+  },
+};
+
+export default config;
+```
+
+<Tip>
+  The title appears in the browser tab and the studio header.
+</Tip>
+
+### Theme Selection
+
+Choose between dark, light, or auto themes:
+
+<CodeGroup>
+```typescript Dark Theme
+metadata: {
+  title: "Admin Dashboard",
+  theme: "dark", // Force dark theme
+}
+```
+
+```typescript Light Theme
+metadata: {
+  title: "Admin Dashboard",
+  theme: "light", // Force light theme
+}
+```
+
+```typescript Auto Theme
+metadata: {
+  title: "Admin Dashboard",
+  theme: "auto", // Match system preference
+}
+```
+</CodeGroup>
+
+**Theme Options:**
+- `"dark"` - Always use dark theme
+- `"light"` - Always use light theme  
+- `"auto"` - Follow system/browser preference (default)
+
+## Visual Branding
+
+### Logo Customization
+
+<Steps>
+  <Step title="Prepare logo asset">
+    - **Format:** PNG, SVG, or JPG
+    - **Recommended size:** 200x60px
+    - **Background:** Transparent (for PNG/SVG)
+  </Step>
+  
+  <Step title="Host logo file">
+    Place in your public directory:
+    ```bash
+    /public/branding/logo.png
+    ```
+  </Step>
+  
+  <Step title="Configure logo path">
+    ```typescript
+    metadata: {
+      logo: "/branding/logo.png",
+    }
+    ```
+  </Step>
+</Steps>
+
+**Logo Configuration:**
+
+```typescript
+metadata: {
+  title: "Acme Corp Admin",
+  logo: "/branding/acme-logo.svg",
+  // Logo appears in header and login screen
+}
+```
+
+<Tip>
+  Use SVG format for logos to ensure crisp rendering at any size.
+</Tip>
+
+### Favicon
+
+Set a custom favicon for browser tabs:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  favicon: "/favicon.ico",
+}
+```
+
+**Favicon Formats:**
+- `.ico` - Best browser compatibility
+- `.png` - Modern browsers (16x16, 32x32, 48x48)
+- `.svg` - Scalable, modern browsers
+
+## Color Customization
+
+### Primary Colors
+
+Customize the main color scheme:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  theme: "dark",
+  colors: {
+    primary: "#3b82f6",   // Blue
+    secondary: "#8b5cf6", // Purple
+    accent: "#10b981",    // Green
+  },
+}
+```
+
+### Color Definitions
+
+<Accordion title="Primary Color">
+  **Usage:**
+  - Main buttons and CTAs
+  - Active navigation items
+  - Links and interactive elements
+  - Focus states
+  
+  ```typescript
+  colors: {
+    primary: "#3b82f6", // Tailwind blue-500
+  }
+  ```
+</Accordion>
+
+<Accordion title="Secondary Color">
+  **Usage:**
+  - Secondary buttons
+  - Badges and tags
+  - Sidebar highlights
+  - Hover states
+  
+  ```typescript
+  colors: {
+    secondary: "#8b5cf6", // Tailwind purple-500
+  }
+  ```
+</Accordion>
+
+<Accordion title="Accent Color">
+  **Usage:**
+  - Success messages
+  - Highlights and emphasis
+  - Status indicators
+  - Special UI elements
+  
+  ```typescript
+  colors: {
+    accent: "#10b981", // Tailwind green-500
+  }
+  ```
+</Accordion>
+
+### Color Format
+
+Supported color formats:
+
+<CodeGroup>
+```typescript Hex Colors
+colors: {
+  primary: "#3b82f6",
+  secondary: "#8b5cf6",
+  accent: "#10b981",
+}
+```
+
+```typescript RGB Colors
+colors: {
+  primary: "rgb(59, 130, 246)",
+  secondary: "rgb(139, 92, 246)",
+  accent: "rgb(16, 185, 129)",
+}
+```
+
+```typescript HSL Colors
+colors: {
+  primary: "hsl(217, 91%, 60%)",
+  secondary: "hsl(258, 90%, 66%)",
+  accent: "hsl(158, 64%, 52%)",
+}
+```
+</CodeGroup>
+
+## Company Information
+
+### Company Metadata
+
+Add your company details:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  company: {
+    name: "Acme Corporation",
+    website: "https://acme.com",
+    supportEmail: "support@acme.com",
+  },
+}
+```
+
+**Display Locations:**
+- Footer
+- About/help sections
+- Email templates
+- Support links
+
+## Feature Toggles
+
+### Disable Features
+
+Hide specific studio sections:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  features: {
+    users: true,          // Show users section
+    sessions: true,       // Show sessions
+    organizations: false, // Hide organizations
+    analytics: true,      // Show analytics
+    tools: false,        // Hide tools section
+    security: true,      // Show security settings
+  },
+}
+```
+
+<Warning>
+  Hiding features only affects the UI. API endpoints remain accessible unless you implement additional authorization.
+</Warning>
+
+### Use Cases
+
+<Accordion title="Simple User Management">
+  ```typescript
+  features: {
+    users: true,
+    sessions: true,
+    organizations: false,
+    analytics: false,
+    tools: false,
+    security: true,
+  }
+  ```
+  
+  Only show user and session management.
+</Accordion>
+
+<Accordion title="Full-Featured Admin">
+  ```typescript
+  features: {
+    users: true,
+    sessions: true,
+    organizations: true,
+    analytics: true,
+    tools: true,
+    security: true,
+  }
+  ```
+  
+  Enable all available features.
+</Accordion>
+
+<Accordion title="Production Admin">
+  ```typescript
+  features: {
+    users: true,
+    sessions: true,
+    organizations: true,
+    analytics: true,
+    tools: false,        // Hide dev tools in production
+    security: true,
+  }
+  ```
+  
+  Hide development tools in production.
+</Accordion>
+
+## Custom Links
+
+### Navigation Links
+
+Add custom navigation links:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  links: [
+    { label: "Documentation", url: "https://docs.example.com" },
+    { label: "Support", url: "https://support.example.com" },
+    { label: "Main App", url: "https://app.example.com" },
+    { label: "API Docs", url: "/api/docs" },
+  ],
+}
+```
+
+**Link Properties:**
+- `label` - Display text
+- `url` - Destination URL (absolute or relative)
+
+<Tip>
+  Links appear in the studio navigation menu for quick access to related resources.
+</Tip>
+
+## Custom Metadata
+
+### Arbitrary Data
+
+Store additional custom data:
+
+```typescript
+metadata: {
+  title: "Admin Dashboard",
+  custom: {
+    environment: "production",
+    version: "2.0.0",
+    buildDate: "2024-03-03",
+    features: ["sso", "2fa", "audit-logs"],
+    supportTier: "enterprise",
+  },
+}
+```
+
+**Use Cases:**
+- Environment indicators
+- Version information
+- Feature flags
+- Analytics tracking
+- Custom integrations
+
+## Complete Example
+
+### Full Branding Configuration
+
+```typescript
+// studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  
+  metadata: {
+    // Basic branding
+    title: "Acme Corp Admin Dashboard",
+    logo: "/branding/acme-logo.svg",
+    favicon: "/branding/favicon.ico",
+    
+    // Company info
+    company: {
+      name: "Acme Corporation",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    
+    // Theme and colors
+    theme: "dark",
+    colors: {
+      primary: "#3b82f6",
+      secondary: "#8b5cf6",
+      accent: "#10b981",
+    },
+    
+    // Feature toggles
+    features: {
+      users: true,
+      sessions: true,
+      organizations: true,
+      analytics: true,
+      tools: false, // Hide in production
+      security: true,
+    },
+    
+    // Custom links
+    links: [
+      { label: "Documentation", url: "https://docs.acme.com" },
+      { label: "Support Portal", url: "https://support.acme.com" },
+      { label: "Main Application", url: "https://app.acme.com" },
+    ],
+    
+    // Custom metadata
+    custom: {
+      environment: process.env.NODE_ENV,
+      version: "2.1.0",
+      region: "us-east-1",
+    },
+  },
+  
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@acme.com"],
+  },
+};
+
+export default config;
+```
+
+## Environment-Based Branding
+
+### Different Configs Per Environment
+
+```typescript
+// studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const isDev = process.env.NODE_ENV === "development";
+const isStaging = process.env.NODE_ENV === "staging";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  
+  metadata: {
+    title: isDev 
+      ? "[DEV] Admin Dashboard" 
+      : isStaging
+      ? "[STAGING] Admin Dashboard"
+      : "Admin Dashboard",
+    
+    theme: "dark",
+    
+    colors: {
+      primary: isDev ? "#f59e0b" : "#3b82f6", // Orange in dev
+      secondary: "#8b5cf6",
+      accent: "#10b981",
+    },
+    
+    features: {
+      users: true,
+      sessions: true,
+      organizations: true,
+      analytics: true,
+      tools: isDev || isStaging, // Only in dev/staging
+      security: true,
+    },
+    
+    custom: {
+      environment: process.env.NODE_ENV,
+      apiUrl: process.env.API_URL,
+    },
+  },
+};
+
+export default config;
+```
+
+## Browser Integration
+
+### How Metadata is Injected
+
+The studio injects metadata into the HTML:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="icon" href="/branding/favicon.ico" />
+  <script>
+    window.__STUDIO_CONFIG__ = {
+      basePath: "/api/studio",
+      metadata: {
+        title: "Admin Dashboard",
+        theme: "dark",
+        colors: { /* ... */ },
+        // ...
+      }
+    };
+  </script>
+</head>
+<body>
+  <!-- Studio app -->
+</body>
+</html>
+```
+
+### Accessing Config in Frontend
+
+Custom frontend code can access the config:
+
+```typescript
+// Access studio config from browser
+const studioConfig = (window as any).__STUDIO_CONFIG__;
+
+console.log(studioConfig.metadata.title);
+console.log(studioConfig.metadata.custom);
+```
+
+## Best Practices
+
+<Accordion title="Consistent branding">
+  Match your studio branding to your main application:
+  - Use same logo
+  - Match color scheme
+  - Consistent typography
+  - Unified theme
+</Accordion>
+
+<Accordion title="Accessibility">
+  Ensure your color choices meet accessibility standards:
+  - Sufficient contrast ratios (WCAG AA/AAA)
+  - Test with colorblind simulators
+  - Support both dark and light themes
+</Accordion>
+
+<Accordion title="Performance">
+  Optimize branding assets:
+  - Compress images
+  - Use appropriate formats (SVG for logos)
+  - Lazy load large assets
+  - Cache static resources
+</Accordion>
+
+<Accordion title="Environment indicators">
+  Make environments visually distinct:
+  - Different colors per environment
+  - Environment name in title
+  - Visual badges/indicators
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Self-Hosting" icon="server" href="/self-hosting/overview">
+    Deploy your customized studio
+  </Card>
+  <Card title="Access Control" icon="shield" href="/self-hosting/access-control">
+    Secure your studio instance
+  </Card>
+  <Card title="CLI Usage" icon="terminal" href="/guides/cli-usage">
+    Master the CLI options
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

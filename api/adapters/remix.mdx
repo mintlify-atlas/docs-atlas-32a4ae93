@@ -1,0 +1,245 @@
+---
+title: Remix Adapter
+description: API reference for the Remix framework adapter
+---
+
+# Remix Adapter
+
+Adapter for integrating Better Auth Studio with Remix applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/remix';
+```
+
+## betterAuthStudio()
+
+Creates a Remix-compatible request handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): ({ request }: { request: Request }) => Promise<Response>
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="({ request }: { request: Request }) => Promise<Response>">
+  An async function that accepts a Remix request context and returns a Response
+</ResponseField>
+
+## Usage
+
+### Resource Route Handler
+
+Create a resource route with a catch-all parameter:
+
+```typescript
+// app/routes/api.studio.$.ts
+import { betterAuthStudio } from 'better-auth-studio/remix';
+import { auth } from '~/lib/auth.server';
+import { defineStudioConfig } from 'better-auth-studio';
+import type { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return handler({ request });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  return handler({ request });
+}
+```
+
+### Simplified Version
+
+```typescript
+// app/routes/api.studio.$.ts
+import { betterAuthStudio } from 'better-auth-studio/remix';
+import { auth } from '~/lib/auth.server';
+
+const handler = betterAuthStudio({ auth });
+
+export const loader = handler;
+export const action = handler;
+```
+
+### With Access Control
+
+```typescript
+// app/routes/api.studio.$.ts
+import { betterAuthStudio } from 'better-auth-studio/remix';
+import { auth } from '~/lib/auth.server';
+import type { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+
+const handler = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com'],
+    sessionDuration: 60 * 60 * 24 // 24 hours
+  }
+});
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return handler({ request });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  return handler({ request });
+}
+```
+
+### With Custom Middleware
+
+```typescript
+// app/routes/api.studio.$.ts
+import { betterAuthStudio } from 'better-auth-studio/remix';
+import { auth } from '~/lib/auth.server';
+import type { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+
+const studioHandler = betterAuthStudio({ auth });
+
+// Custom middleware for logging
+async function withLogging(
+  handler: typeof studioHandler,
+  args: LoaderFunctionArgs | ActionFunctionArgs
+) {
+  console.log(`Studio request: ${args.request.method} ${args.request.url}`);
+  const response = await handler(args);
+  console.log(`Studio response: ${response.status}`);
+  return response;
+}
+
+export async function loader(args: LoaderFunctionArgs) {
+  return withLogging(studioHandler, args);
+}
+
+export async function action(args: ActionFunctionArgs) {
+  return withLogging(studioHandler, args);
+}
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Remix request objects to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // request.method
+  headers: Record<string, string>; // request.headers
+  body?: any;            // Parsed from request
+};
+```
+
+### Base Path Handling
+
+The adapter automatically strips the base path from URLs:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Content Type Handling
+
+The adapter handles multiple content types:
+- `application/json` → `request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## Remix Route Naming
+
+The route file naming follows Remix conventions:
+
+- `api.studio.$.ts` → `/api/studio/*`
+- `api.studio.$splat.ts` → `/api/studio/*` (alternative)
+- `routes/api/studio/$.ts` → `/api/studio/*` (nested routing)
+
+## File Structure
+
+```
+app/
+├── routes/
+│   └── api.studio.$.ts
+└── lib/
+    └── auth.server.ts
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

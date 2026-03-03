@@ -1,0 +1,290 @@
+---
+title: TanStack Start Adapter
+description: API reference for the TanStack Start framework adapter
+---
+
+# TanStack Start Adapter
+
+Adapter for integrating Better Auth Studio with TanStack Start applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/tanstack-start';
+```
+
+## betterAuthStudio()
+
+Creates a TanStack Start-compatible server route handler for Better Auth Studio.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(
+  config: StudioConfig
+): ({ request }: TanStackStartHandlerContext) => Promise<Response>
+```
+
+### Type Definitions
+
+```typescript
+type TanStackStartHandlerContext = {
+  request: Request;
+};
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAtConfig" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="({ request }: TanStackStartHandlerContext) => Promise<Response>">
+  An async function that accepts a handler context with a Request and returns a Response
+</ResponseField>
+
+## Usage
+
+### Server Route Handler
+
+Create a catch-all server route:
+
+```typescript
+// src/routes/api/studio/$.ts
+import { createFileRoute } from '@tanstack/react-router';
+import { betterAuthStudio } from 'better-auth-studio/tanstack-start';
+import { auth } from '~/lib/auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const handler = betterAuthStudio(studioConfig);
+
+export const Route = createFileRoute('/api/studio/$')({
+  server: {
+    handlers: {
+      GET: handler,
+      POST: handler,
+      PUT: handler,
+      DELETE: handler,
+      PATCH: handler,
+    },
+  },
+});
+```
+
+### Simplified Version
+
+```typescript
+// src/routes/api/studio/$.ts
+import { createFileRoute } from '@tanstack/react-router';
+import { betterAuthStudio } from 'better-auth-studio/tanstack-start';
+import { auth } from '~/lib/auth';
+
+const handler = betterAuthStudio({ auth });
+
+export const Route = createFileRoute('/api/studio/$')({
+  server: {
+    handlers: {
+      GET: handler,
+      POST: handler,
+      PUT: handler,
+      DELETE: handler,
+      PATCH: handler,
+    },
+  },
+});
+```
+
+### With Access Control
+
+```typescript
+// src/routes/api/studio/$.ts
+import { createFileRoute } from '@tanstack/react-router';
+import { betterAuthStudio } from 'better-auth-studio/tanstack-start';
+import { auth } from '~/lib/auth';
+
+const handler = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com']
+  }
+});
+
+export const Route = createFileRoute('/api/studio/$')({
+  server: {
+    handlers: {
+      GET: handler,
+      POST: handler,
+      PUT: handler,
+      DELETE: handler,
+      PATCH: handler,
+    },
+  },
+});
+```
+
+### With Custom Middleware
+
+```typescript
+// src/routes/api/studio/$.ts
+import { createFileRoute } from '@tanstack/react-router';
+import { betterAuthStudio } from 'better-auth-studio/tanstack-start';
+import { auth } from '~/lib/auth';
+
+const studioHandler = betterAuthStudio({ auth });
+
+const withLogging = async ({ request }: { request: Request }) => {
+  console.log(`Studio request: ${request.method} ${request.url}`);
+  const response = await studioHandler({ request });
+  console.log(`Studio response: ${response.status}`);
+  return response;
+};
+
+export const Route = createFileRoute('/api/studio/$')({
+  server: {
+    handlers: {
+      GET: withLogging,
+      POST: withLogging,
+      PUT: withLogging,
+      DELETE: withLogging,
+      PATCH: withLogging,
+    },
+  },
+});
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts TanStack Start request objects to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // Pathname + search (with basePath stripped)
+  method: string;        // request.method
+  headers: Record<string, string>; // request.headers
+  body?: any;            // Parsed from request
+};
+```
+
+### Base Path Handling
+
+The adapter automatically strips the base path from URLs:
+
+```typescript
+// If basePath is '/api/studio'
+// And request URL is '/api/studio/users'
+// The universal URL will be '/users'
+```
+
+### Content Type Handling
+
+The adapter handles multiple content types:
+- `application/json` → `request.json()`
+- `application/x-www-form-urlencoded` → FormData converted to object
+- `multipart/form-data` → FormData converted to object
+- Other → Attempts to parse as text, then JSON
+
+### Error Handling
+
+Errors are caught and returned as JSON responses:
+
+```typescript
+{
+  error: "Internal server error"
+}
+```
+
+Status code: `500`
+
+## TanStack Router Integration
+
+### File-based Routing
+
+TanStack Start uses file-based routing with the `$` parameter for catch-all routes:
+
+```
+src/routes/api/studio/$.ts → /api/studio/*
+```
+
+### createFileRoute
+
+The `createFileRoute` function creates type-safe route definitions:
+
+```typescript
+export const Route = createFileRoute('/api/studio/$')({
+  server: {
+    handlers: {
+      // HTTP method handlers
+    },
+  },
+});
+```
+
+## File Structure
+
+```
+src/
+├── routes/
+│   └── api/
+│       └── studio/
+│           └── $.ts
+└── lib/
+    └── auth.ts
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

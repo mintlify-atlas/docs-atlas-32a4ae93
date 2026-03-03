@@ -1,0 +1,151 @@
+---
+title: Self-Hosting Overview
+description: Deploy Better Auth Studio alongside your application for production use
+---
+
+<Warning>
+  Self-hosting is currently in **beta**. Please report any issues on [GitHub](https://github.com/Kinfe123/better-auth-studio).
+</Warning>
+
+Better Auth Studio can be self-hosted and deployed alongside your application for production use. This allows you to have complete control over your authentication admin interface and keep it within your infrastructure.
+
+## Why Self-Host?
+
+Self-hosting Better Auth Studio provides several benefits:
+
+- **Full Control**: Deploy and manage the studio within your own infrastructure
+- **Production Ready**: Run the admin interface alongside your production application
+- **Custom Branding**: Apply your own branding, themes, and customization
+- **Access Control**: Restrict access to specific roles or email addresses
+- **Framework Agnostic**: Works with Next.js, Express, Hono, SvelteKit, Remix, Nuxt, and more
+
+## Installation
+
+<Warning>
+  For self-hosting, install `better-auth-studio` as a **regular dependency** (not devDependency) since it's required at runtime in production.
+</Warning>
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+```bash yarn
+yarn add better-auth-studio
+```
+
+</CodeGroup>
+
+<Note>
+  The CLI usage (standalone studio) can be installed as a dev dependency, but self-hosting requires it in `dependencies` for production deployments.
+</Note>
+
+## Quick Start
+
+<Steps>
+
+<Step title="Initialize Configuration">
+
+Run the initialization command to create a `studio.config.ts` file:
+
+```bash
+pnpx better-auth-studio init
+```
+
+This creates a configuration file in your project root:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Admin Dashboard",
+    theme: "dark",
+  },
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@example.com"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Set Up Framework Adapter">
+
+Choose your framework and follow the appropriate setup guide:
+
+- [Next.js (App Router)](/self-hosting/nextjs)
+- [Express](/self-hosting/express)
+- [Other Frameworks](/self-hosting/other-frameworks) (Hono, SvelteKit, Remix, Nuxt)
+
+</Step>
+
+<Step title="Access the Studio">
+
+Once configured, access the studio at the path you specified in `basePath`:
+
+```
+http://localhost:3000/api/studio
+```
+
+</Step>
+
+</Steps>
+
+## Configuration Options
+
+The `StudioConfig` type accepts the following options:
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `auth` | `BetterAuth` | Yes | Your Better Auth instance |
+| `basePath` | `string` | Yes | URL path where studio is mounted (e.g., `/api/studio`) |
+| `access` | `StudioAccessConfig` | No | Access control configuration |
+| `metadata` | `StudioMetadata` | No | Custom branding and UI configuration |
+| `lastSeenAt` | `StudioLastSeenAtConfig` | No | Enable last-seen tracking |
+| `ipAddress` | `StudioIpAddressConfig` | No | IP geolocation for Events/Sessions |
+| `events` | `EventsConfig` | No | Event tracking configuration |
+| `tools` | `ToolsConfig` | No | Configure which tools to show/hide |
+
+For detailed configuration options, see the [Configuration](/self-hosting/configuration) page.
+
+## Supported Frameworks
+
+Better Auth Studio provides adapters for all major frameworks:
+
+- **Next.js** - App Router with catch-all routes
+- **Express** - Express.js middleware
+- **Hono** - Hono framework handler
+- **SvelteKit** - SvelteKit server routes
+- **Remix** - Remix resource routes
+- **Nuxt** - Nuxt server API routes
+
+Each adapter provides a `betterAuthStudio()` function that creates a framework-specific handler.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Next.js Setup" icon="arrow-right" href="/self-hosting/nextjs">
+    Set up Better Auth Studio with Next.js App Router
+  </Card>
+  <Card title="Express Setup" icon="arrow-right" href="/self-hosting/express">
+    Integrate with Express.js applications
+  </Card>
+  <Card title="Other Frameworks" icon="arrow-right" href="/self-hosting/other-frameworks">
+    Hono, SvelteKit, Remix, and Nuxt setup guides
+  </Card>
+  <Card title="Configuration" icon="arrow-right" href="/self-hosting/configuration">
+    Learn about all configuration options
+  </Card>
+</CardGroup>

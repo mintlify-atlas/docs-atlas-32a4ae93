@@ -1,0 +1,483 @@
+---
+title: Event Ingestion
+description: Configure authentication event tracking and ingestion for Better Auth Studio
+---
+
+Studio can track and store authentication events like user signups, logins, password changes, and organization activities. This provides audit trails and insights into user behavior.
+
+## Overview
+
+Event ingestion allows you to:
+
+- Track all authentication events (40+ event types)
+- Store events in various databases (Postgres, ClickHouse, SQLite, etc.)
+- Filter and monitor specific event types
+- Display events in a live marquee
+- Create custom event handlers
+- Query event history and statistics
+
+## Configuration
+
+Configure events in your `studio.config.ts`:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    clientType: "postgres",
+    include: ["user.joined", "user.logged_in", "session.created"],
+    batchSize: 100,
+    flushInterval: 5000,
+  },
+};
+
+export default config;
+```
+
+## Event Options
+
+<ParamField path="events.enabled" type="boolean">
+  Enable or disable event tracking
+  
+  Default: `false`
+</ParamField>
+
+<ParamField path="events.tableName" type="string">
+  Name of the table/collection to store events
+  
+  Default: Uses Better Auth adapter's default table
+</ParamField>
+
+<ParamField path="events.provider" type="EventIngestionProvider">
+  Custom event ingestion provider implementation. Use this to implement your own event storage logic.
+  
+  ```typescript
+  interface EventIngestionProvider {
+    ingest(event: AuthEvent): Promise<void>;
+    ingestBatch?(events: AuthEvent[]): Promise<void>;
+    query?(options: EventQueryOptions): Promise<EventQueryResult>;
+    count?(): Promise<number>;
+    getStats?(): Promise<EventStats>;
+    healthCheck?(): Promise<boolean>;
+    shutdown?(): Promise<void>;
+  }
+  ```
+</ParamField>
+
+<ParamField path="events.client" type="any">
+  Client instance for the database (Prisma client, Drizzle instance, Postgres pool, ClickHouse client, etc.)
+</ParamField>
+
+<ParamField path="events.clientType" type="string">
+  Type of database client being used
+  
+  Options: `"postgres"`, `"prisma"`, `"drizzle"`, `"clickhouse"`, `"https"`, `"custom"`, `"sqlite"`, `"node-sqlite"`
+</ParamField>
+
+<ParamField path="events.include" type="AuthEventType[]">
+  Array of event types to track. Only these events will be ingested.
+  
+  ```typescript
+  include: [
+    "user.joined",
+    "user.logged_in",
+    "session.created",
+    "organization.created"
+  ]
+  ```
+</ParamField>
+
+<ParamField path="events.exclude" type="AuthEventType[]">
+  Array of event types to exclude from tracking. All other events will be ingested.
+  
+  ```typescript
+  exclude: [
+    "user.logged_out",
+    "session.created"
+  ]
+  ```
+</ParamField>
+
+<ParamField path="events.batchSize" type="number">
+  Number of events to batch before flushing to the database
+  
+  Default: `100`
+</ParamField>
+
+<ParamField path="events.flushInterval" type="number">
+  Interval in milliseconds to flush batched events
+  
+  Default: `5000` (5 seconds)
+</ParamField>
+
+<ParamField path="events.retryOnError" type="boolean">
+  Retry failed event ingestion
+  
+  Default: `false`
+</ParamField>
+
+<ParamField path="events.onEventIngest" type="(event: AuthEvent) => void | Promise<void>">
+  Callback function invoked when an event is ingested. Use this for custom processing, logging, or side effects.
+  
+  ```typescript
+  onEventIngest: async (event) => {
+    console.log('Event ingested:', event.type);
+    // Send to analytics service
+    // Trigger webhooks
+    // Update metrics
+  }
+  ```
+</ParamField>
+
+<ParamField path="events.liveMarquee" type="LiveMarqueeConfig">
+  Configuration for the live event marquee displayed in Studio
+  
+  See [Live Marquee Configuration](#live-marquee-configuration) below
+</ParamField>
+
+## Event Types
+
+Studio tracks 40+ authentication event types:
+
+### User Events
+
+- `user.joined` - User signed up
+- `user.logged_in` - User logged in
+- `user.logged_out` - User logged out
+- `user.updated` - User profile updated
+- `user.password_changed` - Password changed
+- `user.email_verified` - Email verified
+- `user.banned` - User banned
+- `user.unbanned` - User unbanned
+- `user.deleted` - User deleted
+- `user.delete_verification_requested` - Delete verification requested
+
+### Session Events
+
+- `session.created` - New session created
+- `login.failed` - Login attempt failed
+
+### Organization Events
+
+- `organization.created` - Organization created
+- `organization.updated` - Organization updated
+- `organization.deleted` - Organization deleted
+- `member.added` - Member added to organization
+- `member.removed` - Member removed from organization
+- `member.role_changed` - Member role changed
+
+### Team Events
+
+- `team.created` - Team created
+- `team.updated` - Team updated
+- `team.deleted` - Team deleted
+- `team.member.added` - Member added to team
+- `team.member.removed` - Member removed from team
+
+### OAuth Events
+
+- `oauth.linked` - OAuth account linked
+- `oauth.unlinked` - OAuth account unlinked
+- `oauth.sign_in` - User signed in via OAuth
+
+### Password Reset Events
+
+- `password.reset_requested` - Password reset requested
+- `password.reset_completed` - Password reset completed
+- `password.reset_requested_otp` - OTP password reset requested
+- `password.reset_completed_otp` - OTP password reset completed
+
+### Invitation Events
+
+- `invitation.created` - Invitation created
+- `invitation.accepted` - Invitation accepted
+- `invitation.rejected` - Invitation rejected
+- `invitation.cancelled` - Invitation cancelled
+
+### Phone Number Events
+
+- `phone_number.otp_requested` - Phone OTP requested
+- `phone_number.verification` - Phone number verified
+
+## Event Structure
+
+```typescript
+interface AuthEvent {
+  id: string;
+  type: AuthEventType;
+  timestamp: Date;
+  status: "success" | "failed";
+  userId?: string;
+  sessionId?: string;
+  organizationId?: string;
+  metadata?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  source: "app" | "api";
+  display?: {
+    message: string;
+    severity?: "info" | "success" | "warning" | "failed";
+  };
+}
+```
+
+## Live Marquee Configuration
+
+The live marquee displays recent events in real-time at the top of the Studio dashboard:
+
+```typescript
+liveMarquee: {
+  enabled: true,
+  pollInterval: 2000, // 2 seconds
+  speed: 0.5,
+  pauseOnHover: true,
+  limit: 50,
+  sort: "desc", // newest first
+  colors: {
+    success: "#10b981",
+    info: "#3b82f6",
+    warning: "#f59e0b",
+    error: "#ef4444",
+    failed: "#dc2626",
+  },
+  timeWindow: {
+    since: "1h" // Last 1 hour
+  }
+}
+```
+
+<ParamField path="liveMarquee.enabled" type="boolean">
+  Enable or disable the live event marquee
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="liveMarquee.pollInterval" type="number">
+  Polling interval in milliseconds for fetching new events
+  
+  Default: `2000` (2 seconds)
+</ParamField>
+
+<ParamField path="liveMarquee.speed" type="number">
+  Animation speed in pixels per frame
+  
+  Default: `0.5`
+</ParamField>
+
+<ParamField path="liveMarquee.pauseOnHover" type="boolean">
+  Pause animation when mouse hovers over the marquee
+  
+  Default: `true`
+</ParamField>
+
+<ParamField path="liveMarquee.limit" type="number">
+  Maximum number of events to display in the marquee
+  
+  Default: `50`
+</ParamField>
+
+<ParamField path="liveMarquee.sort" type="'asc' | 'desc'">
+  Sort order for events
+  - `"desc"`: Newest first (default)
+  - `"asc"`: Oldest first
+</ParamField>
+
+<ParamField path="liveMarquee.colors" type="EventColors">
+  Custom colors for different event severities
+  
+  ```typescript
+  colors: {
+    success: "#10b981",
+    info: "#3b82f6",
+    warning: "#f59e0b",
+    error: "#ef4444",
+    failed: "#dc2626",
+  }
+  ```
+</ParamField>
+
+<ParamField path="liveMarquee.timeWindow" type="TimeWindowConfig">
+  Time window for fetching events
+  
+  ```typescript
+  // Predefined preset
+  timeWindow: { since: "1h" }
+  
+  // Custom duration in seconds
+  timeWindow: { custom: 7200 } // 2 hours
+  ```
+  
+  Presets: `"15m"`, `"30m"`, `"1h"`, `"2h"`, `"4h"`, `"6h"`, `"12h"`, `"1d"`, `"2d"`, `"3d"`, `"7d"`, `"14d"`, `"30d"`
+</ParamField>
+
+## Example Configurations
+
+### Track All User Events
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    include: [
+      "user.joined",
+      "user.logged_in",
+      "user.logged_out",
+      "user.updated",
+      "user.password_changed",
+      "user.email_verified",
+    ],
+  },
+};
+```
+
+### Exclude Noisy Events
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    exclude: [
+      "session.created", // Too frequent
+      "user.logged_out", // Not important for audit
+    ],
+  },
+};
+```
+
+### Custom Event Handler
+
+```typescript studio.config.ts
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    onEventIngest: async (event) => {
+      // Send critical events to Slack
+      if (event.type === "user.banned" || event.status === "failed") {
+        await sendSlackNotification({
+          channel: "#security-alerts",
+          message: `Event: ${event.type} - Status: ${event.status}`,
+          metadata: event.metadata,
+        });
+      }
+      
+      // Log all events
+      console.log(`[${event.timestamp}] ${event.type}:`, event.status);
+    },
+  },
+};
+```
+
+### ClickHouse Integration
+
+```typescript studio.config.ts
+import { createClient } from '@clickhouse/client';
+
+const clickhouse = createClient({
+  host: process.env.CLICKHOUSE_HOST,
+});
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    client: clickhouse,
+    clientType: "clickhouse",
+    tableName: "auth_events",
+    batchSize: 1000,
+    flushInterval: 10000, // 10 seconds
+  },
+};
+```
+
+## TypeScript Types
+
+```typescript
+type StudioConfig = {
+  // ... other config
+  events?: {
+    enabled?: boolean;
+    tableName?: string;
+    provider?: EventIngestionProvider;
+    client?: any;
+    clientType?: "postgres" | "prisma" | "drizzle" | "clickhouse" | "https" | "custom" | "sqlite" | "node-sqlite";
+    include?: AuthEventType[];
+    exclude?: AuthEventType[];
+    batchSize?: number;
+    flushInterval?: number;
+    retryOnError?: boolean;
+    liveMarquee?: LiveMarqueeConfig;
+    onEventIngest?: (event: AuthEvent) => void | Promise<void>;
+  };
+};
+
+type LiveMarqueeConfig = {
+  enabled?: boolean;
+  pollInterval?: number;
+  speed?: number;
+  pauseOnHover?: boolean;
+  limit?: number;
+  sort?: "asc" | "desc";
+  colors?: EventColors;
+  timeWindow?: TimeWindowConfig;
+};
+
+type TimeWindowConfig =
+  | { since: TimeWindowPreset; custom?: never }
+  | { custom: number; since?: never };
+
+type TimeWindowPreset =
+  | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h"
+  | "1d" | "2d" | "3d" | "7d" | "14d" | "30d";
+```
+
+## Performance Considerations
+
+<Warning>
+**High-Volume Applications:**
+
+- Use batching (`batchSize`) to reduce database writes
+- Increase `flushInterval` for better batching efficiency
+- Use ClickHouse or other time-series databases for millions of events
+- Consider excluding high-frequency events like `session.created`
+- Implement event retention policies to manage database size
+</Warning>
+
+### Recommended Settings by Scale
+
+**Small (< 1,000 events/day):**
+```typescript
+batchSize: 50,
+flushInterval: 5000,
+```
+
+**Medium (1,000 - 100,000 events/day):**
+```typescript
+batchSize: 500,
+flushInterval: 10000,
+```
+
+**Large (> 100,000 events/day):**
+```typescript
+batchSize: 2000,
+flushInterval: 30000,
+clientType: "clickhouse", // Use time-series DB
+```
+
+## Related
+
+- [IP Geolocation](/configuration/ip-geolocation)
+- [Events Feature](/features/events)
+- [Self-Hosting Configuration](/self-hosting/configuration)

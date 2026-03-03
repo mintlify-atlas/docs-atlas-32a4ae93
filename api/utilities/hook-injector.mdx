@@ -1,0 +1,207 @@
+---
+title: Hook Injector
+description: Utilities for injecting authentication hooks into Better Auth
+---
+
+## injectLastSeenAtHooks
+
+Injects a plugin into Better Auth that tracks the last seen timestamp for users. This utility automatically updates a `lastSeenAt` column in your user table whenever a user signs in, signs up, or their session is retrieved.
+
+### Signature
+
+```typescript
+function injectLastSeenAtHooks(
+  auth: any,
+  config?: { 
+    lastSeenAt?: { 
+      enabled?: boolean; 
+      columnName?: string 
+    } 
+  } | null
+): void
+```
+
+### Parameters
+
+<ParamField path="auth" type="any" required>
+  The Better Auth instance to inject hooks into
+</ParamField>
+
+<ParamField path="config" type="object">
+  Configuration object for last seen tracking
+  
+  <Expandable title="properties">
+    <ParamField path="lastSeenAt.enabled" type="boolean" default="false">
+      Whether to enable last seen tracking
+    </ParamField>
+    
+    <ParamField path="lastSeenAt.columnName" type="string" default="lastSeenAt">
+      The name of the database column to store the last seen timestamp. Must match your user table schema (e.g., "lastSeenAt", "last_seen_at")
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Behavior
+
+- Creates a Better Auth plugin that adds a `lastSeenAt` field to the user schema
+- Automatically updates the timestamp on:
+  - User sign-up
+  - User sign-in (email/password or OAuth)
+  - Session retrieval (get-session)
+- Uses the database adapter directly for updates
+- Merges the field into `auth.options.user.additionalFields` so it's returned with user data
+
+### Usage Example
+
+```typescript
+import { betterAuth } from "better-auth";
+import { injectLastSeenAtHooks } from "better-auth-studio";
+
+const auth = betterAuth({
+  // ... your auth config
+});
+
+// Inject last seen tracking
+injectLastSeenAtHooks(auth, {
+  lastSeenAt: {
+    enabled: true,
+    columnName: "lastSeenAt" // or "last_seen_at" to match your DB schema
+  }
+});
+```
+
+### Database Setup
+
+Before enabling this feature, ensure your user table has the corresponding column:
+
+```sql
+-- PostgreSQL example
+ALTER TABLE user ADD COLUMN "lastSeenAt" TIMESTAMP;
+
+-- or for snake_case:
+ALTER TABLE user ADD COLUMN last_seen_at TIMESTAMP;
+```
+
+### Notes
+
+- The function is idempotent - calling it multiple times won't inject duplicate plugins
+- The plugin ID is `better-auth-studio-last-seen`
+- Updates are performed asynchronously and won't block authentication flows
+- Failed updates are silently ignored to prevent disrupting authentication
+
+---
+
+## injectEventHooks
+
+Injects event tracking hooks into Better Auth that automatically capture authentication events (sign-ups, logins, OAuth flows, organization operations, etc.) and send them to your configured event ingestion provider.
+
+### Signature
+
+```typescript
+function injectEventHooks(
+  auth: any, 
+  eventsConfig: StudioConfig["events"]
+): void
+```
+
+### Parameters
+
+<ParamField path="auth" type="any" required>
+  The Better Auth instance to inject event hooks into
+</ParamField>
+
+<ParamField path="eventsConfig" type="StudioConfig['events']" required>
+  Event ingestion configuration object
+  
+  <Expandable title="properties">
+    <ParamField path="enabled" type="boolean" required>
+      Whether event ingestion is enabled
+    </ParamField>
+    
+    <ParamField path="provider" type="EventIngestionProvider">
+      Custom event ingestion provider implementation
+    </ParamField>
+    
+    <ParamField path="client" type="any">
+      Database client instance (Postgres pool, Prisma, Drizzle, ClickHouse, etc.)
+    </ParamField>
+    
+    <ParamField path="clientType" type="'postgres' | 'prisma' | 'drizzle' | 'clickhouse' | 'https' | 'sqlite' | 'node-sqlite' | 'custom'">
+      Type of database client being used
+    </ParamField>
+    
+    <ParamField path="tableName" type="string">
+      Name of the table/collection to store events
+    </ParamField>
+    
+    <ParamField path="include" type="AuthEventType[]">
+      Array of event types to include (whitelist). If set, only these events will be tracked
+    </ParamField>
+    
+    <ParamField path="exclude" type="AuthEventType[]">
+      Array of event types to exclude (blacklist)
+    </ParamField>
+    
+    <ParamField path="batchSize" type="number" default="1">
+      Number of events to batch before flushing to the provider
+    </ParamField>
+    
+    <ParamField path="flushInterval" type="number" default="5000">
+      Interval in milliseconds to flush batched events
+    </ParamField>
+    
+    <ParamField path="retryOnError" type="boolean" default="false">
+      Whether to retry failed event ingestions
+    </ParamField>
+    
+    <ParamField path="onEventIngest" type="(event: AuthEvent) => void | Promise<void>">
+      Callback function invoked when an event is ingested
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Tracked Events
+
+The injected hooks automatically track:
+
+- **User events**: `user.joined`, `user.logged_in`, `user.logged_out`, `user.updated`, `user.banned`, `user.unbanned`
+- **Session events**: `session.created`
+- **OAuth events**: `oauth.sign_in`, `oauth.linked`, `oauth.unlinked`
+- **Organization events**: `organization.created`, `organization.updated`, `organization.deleted`
+- **Member events**: `member.added`, `member.removed`, `member.role_changed`
+- **Team events**: `team.created`, `team.updated`, `team.deleted`, `team.member.added`, `team.member.removed`
+- **Invitation events**: `invitation.created`, `invitation.accepted`, `invitation.rejected`, `invitation.cancelled`
+- **Phone number events**: `phone_number.otp_requested`, `phone_number.verification`
+
+### Usage Example
+
+```typescript
+import { betterAuth } from "better-auth";
+import { injectEventHooks, createPostgresProvider } from "better-auth-studio";
+import { pool } from "./db";
+
+const auth = betterAuth({
+  // ... your auth config
+});
+
+// Inject event tracking with Postgres
+injectEventHooks(auth, {
+  enabled: true,
+  client: pool,
+  clientType: "postgres",
+  tableName: "auth_events",
+  batchSize: 10,
+  flushInterval: 5000,
+  exclude: ["session.created"], // Don't track session creation
+  onEventIngest: async (event) => {
+    console.log("Event ingested:", event.type);
+  }
+});
+```
+
+### Notes
+
+- The function is idempotent - calling it multiple times won't inject duplicate plugins
+- The plugin ID is `better-auth-studio-events`
+- Events are captured asynchronously and won't block authentication flows
+- Also wraps organization plugin hooks and auth callbacks for comprehensive tracking

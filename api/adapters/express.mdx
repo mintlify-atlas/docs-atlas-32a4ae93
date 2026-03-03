@@ -1,0 +1,209 @@
+---
+title: Express Adapter
+description: API reference for the Express.js framework adapter
+---
+
+# Express Adapter
+
+Adapter for integrating Better Auth Studio with Express.js applications.
+
+## Import
+
+```typescript
+import { betterAuthStudio } from 'better-auth-studio/express';
+```
+
+## betterAuthStudio()
+
+Creates an Express Router instance configured to handle Better Auth Studio requests.
+
+### Function Signature
+
+```typescript
+function betterAuthStudio(config: StudioConfig): Router
+```
+
+### Parameters
+
+<ParamField path="config" type="StudioConfig" required>
+  Studio configuration object containing authentication and feature settings.
+  
+  <Expandable title="StudioConfig properties">
+    <ParamField path="auth" type="any" required>
+      Your Better Auth instance
+    </ParamField>
+    
+    <ParamField path="basePath" type="string">
+      Base path for the studio routes. Default: `"/api/studio"`
+    </ParamField>
+    
+    <ParamField path="access" type="StudioAccessConfig">
+      Access control configuration for the studio
+    </ParamField>
+    
+    <ParamField path="metadata" type="StudioMetadata">
+      Customization options for branding and theming
+    </ParamField>
+    
+    <ParamField path="lastSeenAt" type="StudioLastSeenAtConfig">
+      Last-seen tracking configuration
+    </ParamField>
+    
+    <ParamField path="ipAddress" type="StudioIpAddressConfig">
+      IP geolocation provider configuration
+    </ParamField>
+    
+    <ParamField path="events" type="EventsConfig">
+      Event tracking and ingestion configuration
+    </ParamField>
+    
+    <ParamField path="tools" type="object">
+      Tools configuration with exclude list
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField type="ExpressRouter">
+  An Express Router instance that handles all HTTP methods (`*`)
+</ResponseField>
+
+## Usage
+
+### Basic Setup
+
+```typescript
+import express from 'express';
+import { betterAuthStudio } from 'better-auth-studio/express';
+import { auth } from './auth';
+import { defineStudioConfig } from 'better-auth-studio';
+
+const app = express();
+
+// Required: Parse JSON bodies
+app.use(express.json());
+
+const studioConfig = defineStudioConfig({
+  auth,
+  basePath: '/api/studio',
+  metadata: {
+    title: 'My App Studio',
+    theme: 'dark'
+  },
+  events: {
+    enabled: true,
+    tableName: 'auth_events'
+  }
+});
+
+const studioRouter = betterAuthStudio(studioConfig);
+
+// Mount the router
+app.use('/api/studio', studioRouter);
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+  console.log('Studio available at http://localhost:3000/api/studio');
+});
+```
+
+### With TypeScript
+
+```typescript
+import type { Router as ExpressRouter } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
+import { betterAuthStudio } from 'better-auth-studio/express';
+import { auth } from './auth';
+
+const app = express();
+app.use(express.json());
+
+const studioRouter: ExpressRouter = betterAuthStudio({
+  auth,
+  basePath: '/api/studio'
+});
+
+app.use('/api/studio', studioRouter);
+```
+
+### With Middleware
+
+```typescript
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { betterAuthStudio } from 'better-auth-studio/express';
+import { auth } from './auth';
+
+const app = express();
+
+// Global middleware
+app.use(cors());
+app.use(helmet());
+app.use(express.json());
+
+// Studio-specific middleware
+const studioRouter = betterAuthStudio({
+  auth,
+  access: {
+    roles: ['admin'],
+    allowEmails: ['admin@example.com']
+  }
+});
+
+app.use('/api/studio', studioRouter);
+```
+
+## Implementation Details
+
+### Request Conversion
+
+The adapter converts Express Request objects to the universal format:
+
+```typescript
+type UniversalRequest = {
+  url: string;           // req.originalUrl (includes basePath)
+  method: string;        // req.method
+  headers: Record<string, string>; // req.headers
+  body?: any;            // req.body (requires express.json())
+};
+```
+
+### Response Handling
+
+The adapter handles responses by:
+1. Setting the HTTP status code
+2. Setting all response headers
+3. Sending the body (supports both Buffer and string)
+
+### Error Handling
+
+Errors are passed to Express error-handling middleware via `next(error)`:
+
+```typescript
+router.all('*', async (req, res, next) => {
+  try {
+    // Handle request
+  } catch (error) {
+    next(error); // Express will handle the error
+  }
+});
+```
+
+### Required Middleware
+
+<Warning>
+  You must use `express.json()` middleware before mounting the studio router to parse JSON request bodies.
+</Warning>
+
+```typescript
+app.use(express.json()); // Required!
+app.use('/api/studio', betterAuthStudio(config));
+```
+
+## Related
+
+- [Studio Configuration](/configuration/studio-config)
+- [Events Configuration](/configuration/events)
+- [Access Control](/configuration/access)

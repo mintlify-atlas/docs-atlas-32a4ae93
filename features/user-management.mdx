@@ -1,0 +1,289 @@
+---
+title: 'User Management'
+description: 'Manage users, profiles, and authentication data in Better Auth Studio'
+icon: 'users'
+---
+
+## Overview
+
+The User Management section provides a comprehensive interface to view, create, edit, and manage all users in your Better Auth application. You can perform bulk operations, filter by various criteria, and track user activity.
+
+## Accessing User Management
+
+Navigate to **Users** from the main sidebar to access the user management dashboard.
+
+## Key Features
+
+### User List View
+
+The main users page displays:
+
+- **Total user count** - Live count of all users in your system
+- **Paginated table** - Shows 20 users per page with search and filtering
+- **User details** - Profile image, name, email, verification status, and role
+- **Email verification status** - Visual indicator for verified/unverified emails
+- **Ban status** - Shows if a user is currently banned (requires admin plugin)
+- **Created date** - When the user account was created
+- **Last seen** - Last activity timestamp (when events are enabled)
+- **Sortable columns** - Sort by creation date or last seen
+
+### Search and Filters
+
+<Info>
+Use filters to quickly find specific users or segments of your user base.
+</Info>
+
+**Search Bar**: Search users by name or email address
+
+**Available Filters**:
+- **Email Verified** - Filter by verification status (true/false)
+- **Banned Status** - Show only banned or active users (requires admin plugin)
+- **Created Date** - Filter by registration date range using calendar picker
+- **Role** - Filter by user role (text input)
+
+You can combine multiple filters for more specific queries.
+
+### User Actions
+
+<CardGroup cols={2}>
+  <Card title="View User" icon="eye">
+    Click a user row to view detailed profile information including:
+    - User ID (copyable)
+    - Full profile data
+    - Email verification status
+    - Account creation and update timestamps
+    - Last seen activity (if enabled)
+  </Card>
+
+  <Card title="Edit User" icon="pen">
+    Update user information:
+    - Name and email
+    - Profile image (upload or use avatar)
+    - User role (if role-based access is enabled)
+    - Email verification status
+  </Card>
+
+  <Card title="Ban/Unban User" icon="ban">
+    Manage user access (requires admin plugin):
+    - Ban users with optional reason
+    - Set ban expiration time
+    - Unban previously banned users
+    - View ban reason and expiry
+  </Card>
+
+  <Card title="Delete User" icon="trash">
+    Permanently remove a user:
+    - Confirmation modal prevents accidents
+    - Deletes user and associated data
+    - Cannot be undone
+  </Card>
+</CardGroup>
+
+## User Workflows
+
+<Steps>
+  <Step title="Create a New User">
+    1. Click the **Add User** button in the top right
+    2. Enter user details:
+       - Name (required)
+       - Email address (required)
+       - Password (required)
+       - Role (optional)
+    3. Click **Create** to add the user
+    4. User appears immediately in the list
+  </Step>
+
+  <Step title="Edit User Details">
+    1. Find the user in the list or use search
+    2. Click the three-dot menu in the actions column
+    3. Select **Edit User**
+    4. Update the fields you want to change:
+       - Name, email, or role
+       - Upload a new profile image
+    5. Click **Update** to save changes
+  </Step>
+
+  <Step title="Ban a User">
+    1. Locate the user you want to ban
+    2. Click the three-dot menu → **Ban User**
+    3. Enter a ban reason (optional but recommended)
+    4. Set ban duration:
+       - Permanent ban (leave empty)
+       - Temporary ban (specify minutes)
+    5. Confirm the action
+    6. User is immediately marked as banned
+  </Step>
+
+  <Step title="Filter and Export Users">
+    1. Apply filters to narrow down users:
+       - Add filters using the **Add Filter** dropdown
+       - Configure each filter's criteria
+    2. Export filtered results:
+       - Click **Export CSV** button
+       - Downloads a CSV file with user data
+       - Includes: ID, Name, Email, Verification Status, Created/Updated dates
+  </Step>
+</Steps>
+
+## Bulk Operations
+
+### Seed Test Users
+
+Quickly populate your database with test users for development:
+
+<Steps>
+  <Step title="Open Seed Modal">
+    Click the **Seed** button in the top toolbar
+  </Step>
+
+  <Step title="Configure Seeding">
+    - Choose number of users (1-100)
+    - Optionally specify a default role
+    - Click **Seed Users**
+  </Step>
+
+  <Step title="Monitor Progress">
+    Watch the terminal output as users are created:
+    - Real-time progress updates
+    - Success/failure count
+    - Any errors are displayed
+  </Step>
+</Steps>
+
+<Warning>
+Seeding creates real users in your database. Use only in development environments.
+</Warning>
+
+## User Details View
+
+Click any user row to see comprehensive information:
+
+<Accordion title="Profile Information">
+- **User ID** - Unique identifier (copyable)
+- **Name** - Full display name
+- **Email** - Email address with verification badge
+- **Profile Image** - Avatar or uploaded photo
+- **Role** - User's assigned role (if applicable)
+- **Ban Status** - Current ban state with reason and expiry
+</Accordion>
+
+<Accordion title="Account Metadata">
+- **Created At** - Account registration timestamp
+- **Updated At** - Last profile update
+- **Email Verified** - Verification status and date
+- **Last Seen At** - Last activity (requires events enabled)
+</Accordion>
+
+<Accordion title="Linked Accounts">
+View OAuth providers connected to this user:
+- GitHub, Google, Discord, etc.
+- Provider account ID
+- Connection date
+</Accordion>
+
+## Advanced Features
+
+### Last Seen Tracking
+
+When events are enabled in your Studio configuration:
+
+1. Studio automatically adds a `lastSeenAt` field to the user model
+2. Run your database migration to add the column:
+   ```bash
+   # Prisma
+   npx prisma migrate dev
+   
+   # Drizzle
+   npx drizzle-kit push
+   ```
+3. The field updates automatically on:
+   - User sign-in
+   - Session creation
+   - Active session verification
+4. Sort users by "Last Seen" to find inactive accounts
+
+<Note>
+Configure `lastSeenAt` in your `studio.config.ts`:
+```typescript
+{
+  lastSeenAt: {
+    enabled: true,
+    columnName: 'lastSeenAt' // optional, defaults to 'lastSeenAt'
+  }
+}
+```
+</Note>
+
+### Role-Based Features
+
+If you have the `admin` plugin enabled:
+
+- **Ban/Unban Actions** - Available in user action menu
+- **Role Assignment** - Assign and edit user roles
+- **Ban Management** - Track ban reasons and expiration
+
+### Image Upload
+
+When editing users, you can:
+
+- Upload profile images (max 5MB)
+- Automatic image compression to optimize storage
+- Fallback to Dicebear avatars if no image
+- Remove existing images
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Search and Filters">
+    Don't scroll through pages - use search and filters to find users quickly.
+  </Step>
+
+  <Step title="Export Before Bulk Actions">
+    Always export a CSV backup before performing bulk deletions or bans.
+  </Step>
+
+  <Step title="Document Ban Reasons">
+    Always provide a clear ban reason for transparency and record-keeping.
+  </Step>
+
+  <Step title="Monitor Last Seen">
+    Enable last seen tracking to identify inactive users and improve retention.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Users not appearing in the list">
+- Check if filters are active (look for active filter badges)
+- Clear all filters using the "Clear all" button
+- Verify database connection in Settings
+</Accordion>
+
+<Accordion title="Cannot ban/unban users">
+Ensure the `admin` plugin is enabled in your Better Auth configuration:
+```typescript
+import { admin } from 'better-auth/plugins';
+
+export const auth = betterAuth({
+  plugins: [admin()]
+});
+```
+</Accordion>
+
+<Accordion title="Image upload fails">
+- Check file size (max 5MB)
+- Ensure file type is an image (png, jpg, jpeg, gif, webp)
+- Image is automatically compressed before upload
+</Accordion>
+
+## API Reference
+
+User management operations use the following endpoints:
+
+- `GET /api/users` - Fetch users with pagination and filters
+- `POST /api/users` - Create a new user
+- `PUT /api/users/:id` - Update user details
+- `DELETE /api/users/:id` - Delete a user
+- `POST /api/admin/ban-user` - Ban a user (requires admin plugin)
+- `POST /api/admin/unban-user` - Unban a user (requires admin plugin)
+- `POST /api/seed/users` - Seed test users

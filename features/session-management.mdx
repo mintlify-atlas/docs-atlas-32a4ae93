@@ -1,0 +1,398 @@
+---
+title: 'Session Management'
+description: 'Monitor active sessions, accounts, and user authentication activity'
+icon: 'clock-rotate-left'
+---
+
+## Overview
+
+The Session Management section provides real-time visibility into user sessions and linked accounts. Track active sessions, monitor login activity, view IP addresses with geolocation, and manage OAuth account connections.
+
+## Accessing Sessions
+
+Navigate to **Sessions** from the main sidebar to view session management dashboard.
+
+## Key Features
+
+### Session List View
+
+The sessions page displays:
+
+- **Total session count** - All sessions in your system
+- **Session table** - Session ID, user, IP address, location, and status
+- **Session status** - Active or Expired indicators
+- **Expiration dates** - When each session expires
+- **IP address tracking** - Source IP for each session
+- **Geographic location** - City, region, and country (with flag emoji)
+- **Pagination** - Browse through all sessions
+
+### Session Details
+
+Each session shows:
+
+- **Session ID** - Unique identifier (copyable)
+- **User ID** - Associated user (copyable)
+- **IP Address** - Client IP with geolocation lookup
+- **Location** - City, Region, Country with flag
+- **Status** - Active (green) or Expired (red)
+- **Created At** - Session start time
+- **Updated At** - Last session update
+- **Expires At** - Session expiration timestamp
+
+## Session Workflows
+
+<Steps>
+  <Step title="View Active Sessions">
+    1. Navigate to Sessions page
+    2. Use the status filter to show only "Active" sessions
+    3. See all currently authenticated users
+    4. Sort by expiration date to find sessions expiring soon
+  </Step>
+
+  <Step title="View Session Details">
+    1. Click the View icon (eye) on any session
+    2. Modal opens with full session information:
+       - Session ID and User ID (both copyable)
+       - IP address and resolved location
+       - Creation, update, and expiration timestamps
+    3. Copy IDs for reference or debugging
+  </Step>
+
+  <Step title="Delete Session (Logout User)">
+    1. Find the session you want to terminate
+    2. Click Delete icon (trash) in actions column
+    3. Confirm deletion
+    4. Session is immediately invalidated
+    5. User is logged out on their next request
+  </Step>
+
+  <Step title="Monitor IP Locations">
+    1. View the IP/Location column in session table
+    2. See real-time geolocation data:
+       - IP address displayed in monospace font
+       - City and country shown below
+       - Country flag emoji for quick identification
+    3. Click View to see detailed location:
+       - City, Region, Country
+       - Country code
+  </Step>
+</Steps>
+
+## Search and Filters
+
+### Search
+
+Search sessions by:
+- Session ID (partial match)
+- User ID (partial match)
+
+### Session Status Filter
+
+Filter sessions by status:
+
+<Accordion title="All Sessions">
+Shows every session regardless of expiration status
+</Accordion>
+
+<Accordion title="Active Sessions">
+Only sessions with `expiresAt` in the future:
+- Currently valid sessions
+- Users who can access your app
+- Sessions that haven't been manually revoked
+</Accordion>
+
+<Accordion title="Expired Sessions">
+Sessions that have passed their expiration:
+- No longer valid for authentication
+- User must log in again
+- Historical session data
+</Accordion>
+
+## IP Geolocation
+
+Better Auth Studio can resolve IP addresses to geographic locations:
+
+### Configuration
+
+Enable IP geolocation in your `studio.config.ts`:
+
+```typescript
+import type { StudioConfig } from 'better-auth-studio';
+
+const config: StudioConfig = {
+  // ... other config
+  ipAddress: {
+    provider: 'ipinfo', // or 'ipapi'
+    apiToken: process.env.IPINFO_TOKEN, // required for ipinfo
+    endpoint: 'lite', // ipinfo only: 'lite' or 'lookup'
+  }
+};
+```
+
+### Supported Providers
+
+<CardGroup cols={2}>
+  <Card title="IPInfo" icon="location-dot">
+    **Provider:** `ipinfo`
+    
+    **Endpoints:**
+    - `lite` - Basic location data (default)
+    - `lookup` - Full location details
+    
+    **Configuration:**
+    ```typescript
+    ipAddress: {
+      provider: 'ipinfo',
+      apiToken: process.env.IPINFO_TOKEN,
+      endpoint: 'lite'
+    }
+    ```
+    
+    Get API token: [ipinfo.io](https://ipinfo.io)
+  </Card>
+
+  <Card title="IP-API" icon="globe">
+    **Provider:** `ipapi`
+    
+    **Features:**
+    - Free tier available
+    - No API token required
+    - Rate-limited on free tier
+    
+    **Configuration:**
+    ```typescript
+    ipAddress: {
+      provider: 'ipapi'
+    }
+    ```
+    
+    Learn more: [ip-api.com](https://ip-api.com)
+  </Card>
+</CardGroup>
+
+### Location Data
+
+When configured, sessions show:
+
+- **City** - e.g., "San Francisco"
+- **Region** - e.g., "California"
+- **Country** - e.g., "United States"
+- **Country Code** - e.g., "US"
+- **Flag Emoji** - Visual country indicator
+
+<Info>
+Location resolution happens in real-time. If you see "Resolving...", geolocation is in progress.
+</Info>
+
+## Account Management
+
+View and manage linked OAuth accounts:
+
+### Viewing Accounts
+
+The Sessions page includes an accounts seeding feature:
+
+<Steps>
+  <Step title="Open Seed Modal">
+    Click **Seed** button in toolbar
+  </Step>
+
+  <Step title="Seed Accounts Tab">
+    Switch to "Seed Accounts" section in modal
+  </Step>
+
+  <Step title="Configure">
+    - Choose number of accounts to create (1-100)
+    - Accounts are randomly assigned providers
+  </Step>
+
+  <Step title="Execute">
+    Click **Seed Accounts** and monitor progress in terminal
+  </Step>
+</Steps>
+
+### Account Types
+
+Linked accounts can be:
+
+- **OAuth Providers** - GitHub, Google, Discord, etc.
+- **Email/Password** - Credential-based accounts
+- **Phone Number** - SMS-based authentication
+
+## Session Lifecycle
+
+### Session Creation
+
+Sessions are created when:
+
+1. User signs in with email/password
+2. User authenticates via OAuth provider
+3. User verifies magic link
+4. Programmatic session creation via API
+
+### Session Expiration
+
+Sessions expire:
+
+- After the configured `expiresAt` time
+- When manually deleted from Studio
+- When user explicitly logs out
+- When session is revoked programmatically
+
+### Session Updates
+
+The `updatedAt` field changes when:
+
+- Session is refreshed
+- Session metadata is updated
+- User performs authenticated actions
+
+## Bulk Operations
+
+### Seed Sessions
+
+Create test sessions for development:
+
+<Steps>
+  <Step title="Open Seed Modal">
+    Click **Seed** button
+  </Step>
+
+  <Step title="Seed Sessions">
+    - Enter number of sessions (1-100)
+    - Sessions are created for random existing users
+  </Step>
+
+  <Step title="Monitor">
+    Watch terminal output:
+    - Session creation progress
+    - Success/failure count
+    - Any errors
+  </Step>
+</Steps>
+
+<Warning>
+Seeded sessions are real and can be used for authentication. Only use in development.
+</Warning>
+
+## Session Monitoring
+
+### Active Session Count
+
+Monitor how many users are currently authenticated:
+
+1. View total session count in page header
+2. Filter to "Active" sessions
+3. Compare to total users to see engagement
+
+### Session Analytics
+
+Use session data to understand:
+
+- **Peak usage times** - When users are most active
+- **Session duration** - How long users stay logged in
+- **Geographic distribution** - Where your users are located
+- **Login frequency** - How often users authenticate
+
+## Best Practices
+
+<Steps>
+  <Step title="Monitor Active Sessions">
+    Regularly review active sessions to:
+    - Detect unusual login patterns
+    - Identify suspicious IP addresses
+    - Track concurrent sessions per user
+  </Step>
+
+  <Step title="Configure IP Geolocation">
+    Enable IP tracking to:
+    - Identify login locations
+    - Detect potential account takeovers
+    - Understand user demographics
+  </Step>
+
+  <Step title="Set Appropriate Expiration">
+    Configure session expiration in Better Auth:
+    ```typescript
+    export const auth = betterAuth({
+      session: {
+        expiresIn: 60 * 60 * 24 * 7, // 7 days
+      }
+    });
+    ```
+  </Step>
+
+  <Step title="Clean Up Expired Sessions">
+    Periodically remove expired sessions to:
+    - Keep database clean
+    - Improve query performance
+    - Maintain accurate metrics
+  </Step>
+</Steps>
+
+## Security Considerations
+
+<Warning>
+Session management is critical for security. Follow these guidelines:
+</Warning>
+
+### Session Security
+
+- **Revoke suspicious sessions** - Delete sessions from unusual IPs
+- **Monitor concurrent sessions** - Check if user has multiple active sessions
+- **Geographic anomalies** - Investigate sessions from unexpected locations
+- **Session hijacking** - Watch for rapid IP changes within same session
+
+### IP Address Privacy
+
+- IP addresses are sensitive personal data
+- Comply with GDPR, CCPA, and privacy regulations
+- Only store IPs when necessary
+- Consider anonymizing or hashing IPs in production
+
+## Troubleshooting
+
+<Accordion title="Location shows 'Resolving...' forever">
+Check your IP geolocation configuration:
+
+1. Verify `ipAddress` config in `studio.config.ts`
+2. Ensure API token is valid (for IPInfo)
+3. Check API rate limits
+4. Verify network connectivity to provider
+</Accordion>
+
+<Accordion title="Sessions not appearing">
+- Verify users have actually logged in
+- Check session expiration settings
+- Ensure session creation is working in Better Auth
+- Look for errors in browser console
+</Accordion>
+
+<Accordion title="Cannot delete sessions">
+- Check database permissions
+- Ensure Better Auth adapter is configured correctly
+- Verify session ID is correct
+</Accordion>
+
+<Accordion title="IP address not showing">
+- IP tracking requires session creation to capture IP
+- Check if Better Auth is configured to store IP addresses
+- Verify request headers include IP information
+</Accordion>
+
+## API Reference
+
+Session operations use these endpoints:
+
+- `GET /api/sessions` - List all sessions
+- `POST /api/sessions` - Create session (not typically used directly)
+- `DELETE /api/sessions/:id` - Delete/revoke session
+- `POST /api/seed/sessions` - Seed test sessions
+- `POST /api/seed/accounts` - Seed linked accounts
+- `POST /api/geo/resolve` - Resolve IP to location
+
+## Related Features
+
+- **[User Management](/features/user-management)** - Manage users who own these sessions
+- **[Event Tracking](/features/event-tracking)** - See login events that created sessions
+- **[Developer Tools](/features/developer-tools)** - Test OAuth flows that create sessions

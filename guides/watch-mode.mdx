@@ -1,0 +1,379 @@
+---
+title: Watch Mode
+description: Automatic server reload when your auth configuration changes during development
+---
+
+## Overview
+
+Watch mode automatically monitors your `auth.ts` configuration file and reloads the Better Auth Studio server when changes are detected. This provides a seamless development experience when iterating on your authentication setup.
+
+## Enabling Watch Mode
+
+Start the studio with the `--watch` flag:
+
+```bash
+pnpx better-auth-studio start --watch
+```
+
+<Tip>
+  Watch mode is perfect for active development when you're frequently updating your auth configuration.
+</Tip>
+
+## How It Works
+
+<Steps>
+  <Step title="File Monitoring">
+    Watch mode uses `chokidar` to monitor your auth config file for any changes.
+    
+    ```bash
+    # Terminal output when watch mode starts
+    ✔ Better Auth Studio is running!
+    👀 Watch mode enabled - config changes will reload automatically
+    ```
+  </Step>
+  
+  <Step title="Change Detection">
+    When you save changes to your auth config file, the studio detects them immediately.
+    
+    ```bash
+    # Terminal output on file change
+    ↻ Reloading Better Auth Studio (changed src/auth.ts)
+    ```
+  </Step>
+  
+  <Step title="Server Reload">
+    The server automatically:
+    - Closes the current instance
+    - Reloads the auth configuration
+    - Restarts the server
+    - Maintains the same port and host
+  </Step>
+  
+  <Step title="Browser Update">
+    The browser UI updates automatically via WebSocket connection (no manual refresh needed).
+    
+    ```bash
+    # Terminal output on reload complete
+    ✔ Reload complete (src/auth.ts)
+    ```
+  </Step>
+</Steps>
+
+## WebSocket Integration
+
+Watch mode uses WebSocket to provide real-time updates to the browser:
+
+### Connection Lifecycle
+
+```typescript
+// WebSocket connection established automatically
+{
+  type: "connected",
+  message: "Connected to Better Auth Studio (watch mode)"
+}
+```
+
+### Status Messages
+
+The studio sends status updates during reload:
+
+<Accordion title="up_to_date - Server Ready">
+  ```json
+  {
+    "type": "studio_status",
+    "status": "up_to_date",
+    "updatedAt": 1234567890,
+    "fileName": "auth.ts",
+    "filePath": "src/auth.ts"
+  }
+  ```
+  
+  Server is running and ready to accept requests.
+</Accordion>
+
+<Accordion title="refreshing - Reload in Progress">
+  ```json
+  {
+    "type": "studio_status",
+    "status": "refreshing",
+    "updatedAt": 1234567890,
+    "fileName": "auth.ts",
+    "filePath": "src/auth.ts"
+  }
+  ```
+  
+  Server is reloading due to config changes.
+</Accordion>
+
+<Accordion title="error - Reload Failed">
+  ```json
+  {
+    "type": "studio_status",
+    "status": "error",
+    "updatedAt": 1234567890,
+    "message": "Unable to reload auth configuration.",
+    "fileName": "auth.ts",
+    "filePath": "src/auth.ts"
+  }
+  ```
+  
+  Server encountered an error during reload.
+</Accordion>
+
+### Change Events
+
+<CodeGroup>
+```json Change Detected
+{
+  "type": "config_change_detected",
+  "message": "Auth configuration change detected",
+  "fileName": "auth.ts",
+  "filePath": "src/auth.ts",
+  "changedAt": 1234567890
+}
+```
+
+```json Change Complete
+{
+  "type": "config_changed",
+  "message": "Configuration has been reloaded",
+  "fileName": "auth.ts",
+  "filePath": "src/auth.ts",
+  "changedAt": 1234567890
+}
+```
+</CodeGroup>
+
+## Configuration
+
+### With Custom Config Path
+
+Watch mode works with custom config paths:
+
+```bash
+pnpx better-auth-studio start --watch --config ./src/lib/auth.ts
+```
+
+The studio will monitor the specified file for changes.
+
+### With Other Options
+
+Combine watch mode with other CLI options:
+
+```bash
+# Watch mode with custom port
+pnpx better-auth-studio start --watch --port 3001
+
+# Watch mode without auto-opening browser
+pnpx better-auth-studio start --watch --no-open
+
+# Full configuration
+pnpx better-auth-studio start \
+  --watch \
+  --config ./src/lib/auth.ts \
+  --port 3001 \
+  --host localhost
+```
+
+## Terminal Output Examples
+
+### Successful Reload
+
+```bash
+↻ Reloading Better Auth Studio (changed src/auth.ts)
+✔ Reload complete (src/auth.ts)
+```
+
+### Failed Reload
+
+```bash
+↻ Reloading Better Auth Studio (changed src/auth.ts)
+✖ Reload failed (src/auth.ts) - Unable to reload auth configuration.
+```
+
+<Warning>
+  If reload fails, the previous server instance remains running. Fix the configuration error and save again to retry.
+</Warning>
+
+### Auto-Detection Warning
+
+If the auth config file cannot be located:
+
+```bash
+⚠ Unable to locate your auth config file. Watch mode will be disabled for this session.
+```
+
+<Tip>
+  Use the `--config` flag to specify the exact path to your auth configuration file.
+</Tip>
+
+## Heartbeat & Connection Management
+
+Watch mode maintains WebSocket connections with automatic heartbeat:
+
+```typescript
+// Heartbeat ping every 30 seconds
+setInterval(() => {
+  if (ws.readyState === ws.OPEN) {
+    ws.ping();
+  }
+}, 30000);
+```
+
+**Benefits:**
+- Keeps connections alive
+- Detects disconnected clients
+- Automatically cleans up closed connections
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Plugin Development" icon="plug">
+    Test Better Auth plugins in real-time as you develop them.
+  </Card>
+  <Card title="Provider Configuration" icon="key">
+    Iterate on OAuth provider settings and see changes immediately.
+  </Card>
+  <Card title="Database Changes" icon="database">
+    Switch between database adapters and test configurations.
+  </Card>
+  <Card title="Security Settings" icon="shield">
+    Adjust security options and verify them instantly.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+### During Active Development
+
+<Steps>
+  <Step title="Enable watch mode">
+    ```bash
+    pnpx better-auth-studio start --watch
+    ```
+  </Step>
+  
+  <Step title="Edit your auth config">
+    Make changes to `auth.ts` and save the file.
+  </Step>
+  
+  <Step title="Verify in browser">
+    The browser UI updates automatically - no refresh needed.
+  </Step>
+</Steps>
+
+### For Production Testing
+
+<Warning>
+  **Do not use watch mode in production.** It's designed for development only.
+</Warning>
+
+For production deployments:
+1. Use self-hosting setup
+2. Disable watch mode
+3. Implement proper deployment strategies
+
+See [Self-Hosting](/self-hosting/overview) for production setup.
+
+## Troubleshooting
+
+### Watch Mode Not Working
+
+<Accordion title="Config file not detected">
+  **Problem:** `⚠ Unable to locate your auth config file`
+  
+  **Solution:**
+  ```bash
+  # Specify config path explicitly
+  pnpx better-auth-studio start --watch --config ./src/auth.ts
+  ```
+</Accordion>
+
+<Accordion title="Reload keeps failing">
+  **Problem:** `✖ Reload failed - Unable to reload auth configuration`
+  
+  **Solutions:**
+  - Check for syntax errors in `auth.ts`
+  - Verify all imports are valid
+  - Check terminal for detailed error messages
+  - Ensure database connection is still active
+</Accordion>
+
+<Accordion title="Browser not updating">
+  **Problem:** UI doesn't reflect config changes
+  
+  **Solutions:**
+  - Check browser console for WebSocket errors
+  - Verify WebSocket connection is established
+  - Try manually refreshing the page
+  - Restart the studio server
+</Accordion>
+
+<Accordion title="Multiple rapid changes">
+  **Problem:** Server reloads too frequently
+  
+  **Solutions:**
+  - Wait for reload to complete before making more changes
+  - Disable auto-save in your editor temporarily
+  - The studio includes a 75ms debounce to prevent excessive reloads
+</Accordion>
+
+### WebSocket Connection Issues
+
+If WebSocket connections fail:
+
+1. **Check firewall settings** - Ensure WebSocket connections are allowed
+2. **Verify port availability** - Make sure the port isn't blocked
+3. **Browser compatibility** - Use a modern browser with WebSocket support
+4. **Network proxy** - Some proxies may block WebSocket connections
+
+## Graceful Shutdown
+
+Watch mode handles shutdown gracefully:
+
+```bash
+Press Ctrl+C to stop the studio
+```
+
+On shutdown, the server:
+1. Closes the file watcher
+2. Terminates WebSocket connections
+3. Shuts down the HTTP server
+4. Exits cleanly
+
+## Performance Considerations
+
+### File Watching
+
+- **Efficient:** Uses `chokidar` for optimal file system monitoring
+- **Selective:** Only watches the auth config file, not the entire project
+- **Low overhead:** Minimal CPU/memory impact during idle periods
+
+### Reload Speed
+
+Typical reload times:
+- **Detection:** &lt;10ms (instant)
+- **Server restart:** 50-200ms
+- **Config reload:** 100-500ms (depends on complexity)
+- **Total:** Usually under 1 second
+
+<Tip>
+  The 75ms delay before reload helps batch multiple rapid file saves into a single reload.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLI Usage" icon="terminal" href="/guides/cli-usage">
+    Explore all CLI options and commands
+  </Card>
+  <Card title="Custom Branding" icon="palette" href="/guides/custom-branding">
+    Customize studio appearance
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/self-hosting/overview">
+    Production deployment guide
+  </Card>
+</CardGroup>

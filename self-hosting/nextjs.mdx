@@ -1,0 +1,388 @@
+---
+title: Next.js Setup
+description: Self-host Better Auth Studio with Next.js App Router
+---
+
+Learn how to self-host Better Auth Studio in your Next.js application using the App Router.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- A Next.js application with App Router (Next.js 13+)
+- Better Auth configured in your project
+- `better-auth-studio` installed as a dependency
+
+## Installation
+
+<Steps>
+
+<Step title="Install Dependencies">
+
+<Warning>
+  Install as a **regular dependency** (not devDependency) for production deployments.
+</Warning>
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+```bash yarn
+yarn add better-auth-studio
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Initialize Configuration">
+
+Run the init command to create your configuration file:
+
+```bash
+pnpx better-auth-studio init
+```
+
+This creates a `studio.config.ts` file in your project root:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Admin Dashboard",
+    theme: "dark",
+  },
+  access: {
+    roles: ["admin"],
+    allowEmails: ["admin@example.com"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Create API Route">
+
+The `init` command automatically creates a catch-all route handler. Create the file manually if needed:
+
+```typescript app/api/studio/[[...path]]/route.ts
+import { betterAuthStudio } from "better-auth-studio/nextjs";
+import studioConfig from "@/studio.config";
+
+const handler = betterAuthStudio(studioConfig);
+
+export { handler as GET, handler as POST, handler as PUT, handler as DELETE, handler as PATCH };
+```
+
+<Note>
+  The `[[...path]]` catch-all route ensures all studio requests are handled correctly.
+</Note>
+
+</Step>
+
+<Step title="Access the Studio">
+
+Start your Next.js development server:
+
+```bash
+npm run dev
+```
+
+Access the studio at:
+
+```
+http://localhost:3000/api/studio
+```
+
+</Step>
+
+</Steps>
+
+## How It Works
+
+The Next.js adapter (`better-auth-studio/nextjs`) provides a `betterAuthStudio()` function that:
+
+1. **Accepts your StudioConfig** - Takes your configuration including auth instance and settings
+2. **Returns a Request handler** - Returns a function that handles Next.js `Request` objects
+3. **Converts requests** - Transforms Next.js requests to universal format
+4. **Handles all HTTP methods** - Supports GET, POST, PUT, DELETE, and PATCH
+5. **Injects hooks** - Automatically injects last-seen tracking and event hooks if configured
+
+### Adapter Implementation
+
+Here's how the Next.js adapter works internally:
+
+```typescript src/adapters/nextjs.ts
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig, UniversalRequest, UniversalResponse } from "../types/handler.js";
+import { injectEventHooks, injectLastSeenAtHooks } from "../utils/hook-injector.js";
+
+export function betterAuthStudio(config: StudioConfig) {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  return async (request: Request): Promise<Response> => {
+    try {
+      const universalRequest = await requestToUniversal(request);
+      const universalResponse = await handleStudioRequest(universalRequest, config);
+      return universalToResponse(universalResponse);
+    } catch (error) {
+      console.error("Studio handler error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  };
+}
+```
+
+## Configuration Examples
+
+### Basic Setup
+
+Minimal configuration for Next.js:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+};
+
+export default config;
+```
+
+### With Access Control
+
+Restrict access to specific roles or emails:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin", "super-admin"],
+    allowEmails: [
+      "admin@company.com",
+      "support@company.com"
+    ],
+  },
+};
+
+export default config;
+```
+
+### With Custom Branding
+
+Customize the studio appearance:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  metadata: {
+    title: "Acme Admin Dashboard",
+    theme: "dark",
+    company: {
+      name: "Acme Inc.",
+      website: "https://acme.com",
+      supportEmail: "support@acme.com",
+    },
+    colors: {
+      primary: "#6366f1",
+      secondary: "#8b5cf6",
+      accent: "#ec4899",
+    },
+  },
+};
+
+export default config;
+```
+
+### With Last-Seen Tracking
+
+Enable user last-seen tracking:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  lastSeenAt: {
+    enabled: true,
+    columnName: "lastSeenAt", // Default value
+  },
+};
+
+export default config;
+```
+
+<Note>
+  When enabling `lastSeenAt`, make sure to add the column to your user table and run migrations (e.g., `prisma migrate dev`).
+</Note>
+
+### With Event Tracking
+
+Enable authentication event tracking:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    include: ["sign-in", "sign-up", "sign-out"],
+    liveMarquee: {
+      enabled: true,
+      pollInterval: 2000,
+      speed: 0.5,
+    },
+  },
+};
+
+export default config;
+```
+
+## Custom Base Path
+
+You can mount the studio at any path by changing the `basePath` and route location:
+
+<Tabs>
+  <Tab title="/admin">
+    ```typescript studio.config.ts
+    const config: StudioConfig = {
+      auth,
+      basePath: "/admin",
+      // ... other options
+    };
+    ```
+
+    ```typescript app/admin/[[...path]]/route.ts
+    import { betterAuthStudio } from "better-auth-studio/nextjs";
+    import studioConfig from "@/studio.config";
+
+    const handler = betterAuthStudio(studioConfig);
+
+    export { handler as GET, handler as POST, handler as PUT, handler as DELETE, handler as PATCH };
+    ```
+
+    Access at: `http://localhost:3000/admin`
+  </Tab>
+
+  <Tab title="/dashboard/admin">
+    ```typescript studio.config.ts
+    const config: StudioConfig = {
+      auth,
+      basePath: "/dashboard/admin",
+      // ... other options
+    };
+    ```
+
+    ```typescript app/dashboard/admin/[[...path]]/route.ts
+    import { betterAuthStudio } from "better-auth-studio/nextjs";
+    import studioConfig from "@/studio.config";
+
+    const handler = betterAuthStudio(studioConfig);
+
+    export { handler as GET, handler as POST, handler as PUT, handler as DELETE, handler as PATCH };
+    ```
+
+    Access at: `http://localhost:3000/dashboard/admin`
+  </Tab>
+</Tabs>
+
+## Deployment
+
+### Vercel
+
+Better Auth Studio works seamlessly on Vercel:
+
+1. Ensure `better-auth-studio` is in `dependencies` (not `devDependencies`)
+2. Deploy your Next.js app normally
+3. The studio will be available at your configured `basePath`
+
+### Other Platforms
+
+The studio works on any platform that supports Next.js:
+
+- **Netlify** - Deploy as a Next.js site
+- **Railway** - Deploy with Docker or Nixpacks
+- **Render** - Deploy as a web service
+- **Self-hosted** - Use `next start` or Docker
+
+## Troubleshooting
+
+### Studio Not Loading
+
+If the studio doesn't load, check:
+
+1. **basePath matches route**: Ensure `studio.config.ts` `basePath` matches your route folder name
+2. **All HTTP methods exported**: Verify you're exporting GET, POST, PUT, DELETE, and PATCH
+3. **Config file location**: Make sure `studio.config.ts` is in the project root or adjust the import path
+
+### Access Denied Errors
+
+If you get access denied:
+
+1. **Check access.roles**: Ensure your user has one of the allowed roles
+2. **Check access.allowEmails**: Verify your email is in the allowed list
+3. **Authentication**: Make sure you're logged in with Better Auth
+
+### TypeScript Errors
+
+For TypeScript issues:
+
+```bash
+npm install --save-dev @types/better-auth
+```
+
+Ensure your `tsconfig.json` includes:
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "esModuleInterop": true
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/self-hosting/configuration">
+    Learn about all configuration options
+  </Card>
+  <Card title="Express Setup" icon="server" href="/self-hosting/express">
+    Set up with Express.js
+  </Card>
+</CardGroup>

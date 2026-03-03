@@ -1,0 +1,517 @@
+---
+title: Other Frameworks
+description: Self-host Better Auth Studio with Hono, SvelteKit, Remix, and Nuxt
+---
+
+Better Auth Studio provides adapters for multiple frameworks beyond Next.js and Express. This guide covers setup for Hono, SvelteKit, Remix, and Nuxt.
+
+## Hono
+
+Hono is a fast, lightweight web framework for edge runtimes.
+
+### Installation
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio hono
+```
+
+```bash pnpm
+pnpm add better-auth-studio hono
+```
+
+</CodeGroup>
+
+### Setup
+
+<Steps>
+
+<Step title="Create Studio Config">
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Add to Hono App">
+
+```typescript app.ts
+import { Hono } from "hono";
+import { betterAuthStudio } from "better-auth-studio/hono";
+import studioConfig from "./studio.config";
+
+const app = new Hono();
+
+// Mount studio at /api/studio/*
+app.all("/api/studio/*", betterAuthStudio(studioConfig));
+
+// Your other routes
+app.get("/", (c) => c.text("Hello Hono!"));
+
+export default app;
+```
+
+</Step>
+
+</Steps>
+
+### Adapter Implementation
+
+The Hono adapter converts Hono's `Context` to a universal request format:
+
+```typescript src/adapters/hono.ts
+import type { Context } from "hono";
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig, UniversalRequest } from "../types/handler.js";
+
+export function betterAuthStudio(config: StudioConfig) {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  return async (c: Context) => {
+    try {
+      const universalReq = await convertHonoToUniversal(c);
+      const universalRes = await handleStudioRequest(universalReq, config);
+      return sendHonoResponse(c, universalRes);
+    } catch (error) {
+      console.error("Studio handler error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  };
+}
+```
+
+---
+
+## SvelteKit
+
+SvelteKit is a framework for building web applications with Svelte.
+
+### Installation
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+</CodeGroup>
+
+### Setup
+
+<Steps>
+
+<Step title="Create Studio Config">
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Create Catch-All Route">
+
+Create a catch-all server route:
+
+```typescript src/routes/api/studio/[...path]/+server.ts
+import { betterAuthStudio } from "better-auth-studio/svelte-kit";
+import studioConfig from "../../../../studio.config";
+
+const handler = betterAuthStudio(studioConfig);
+
+export async function GET(event) {
+  return handler(event);
+}
+
+export async function POST(event) {
+  return handler(event);
+}
+
+export async function PUT(event) {
+  return handler(event);
+}
+
+export async function DELETE(event) {
+  return handler(event);
+}
+
+export async function PATCH(event) {
+  return handler(event);
+}
+```
+
+</Step>
+
+</Steps>
+
+### Adapter Implementation
+
+The SvelteKit adapter handles SvelteKit's `RequestEvent`:
+
+```typescript src/adapters/svelte-kit.ts
+import type { RequestEvent } from "@sveltejs/kit";
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig } from "../types/handler.js";
+
+export function betterAuthStudio(config: StudioConfig) {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  return async (event: RequestEvent): Promise<Response> => {
+    try {
+      const universalReq = await convertSvelteKitToUniversal(event, config);
+      const universalRes = await handleStudioRequest(universalReq, config);
+      return universalToResponse(universalRes);
+    } catch (error) {
+      console.error("Studio handler error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  };
+}
+```
+
+---
+
+## Remix
+
+Remix is a full-stack web framework focused on web standards.
+
+### Installation
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+</CodeGroup>
+
+### Setup
+
+<Steps>
+
+<Step title="Create Studio Config">
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Create Resource Route">
+
+Create a splat route to handle all studio requests:
+
+```typescript app/routes/api.studio.$.ts
+import { betterAuthStudio } from "better-auth-studio/remix";
+import studioConfig from "~/studio.config";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+
+const handler = betterAuthStudio(studioConfig);
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return handler({ request });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  return handler({ request });
+}
+```
+
+<Note>
+  The `$` in the filename creates a catch-all route that matches `/api/studio/*`
+</Note>
+
+</Step>
+
+</Steps>
+
+### Adapter Implementation
+
+The Remix adapter works with Remix's loader and action functions:
+
+```typescript src/adapters/remix.ts
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig } from "../types/handler.js";
+
+export function betterAuthStudio(config: StudioConfig) {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  return async ({ request }: { request: Request }): Promise<Response> => {
+    try {
+      const universalReq = await convertRemixToUniversal({ request }, config);
+      const universalRes = await handleStudioRequest(universalReq, config);
+      return universalToResponse(universalRes);
+    } catch (error) {
+      console.error("Studio handler error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  };
+}
+```
+
+---
+
+## Nuxt
+
+Nuxt is the intuitive Vue framework for building web applications.
+
+### Installation
+
+<CodeGroup>
+
+```bash npm
+npm install better-auth-studio
+```
+
+```bash pnpm
+pnpm add better-auth-studio
+```
+
+</CodeGroup>
+
+### Setup
+
+<Steps>
+
+<Step title="Create Studio Config">
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin"],
+  },
+};
+
+export default config;
+```
+
+</Step>
+
+<Step title="Create Server Route">
+
+Create a catch-all server API route:
+
+```typescript server/api/studio/[...all].ts
+import { betterAuthStudio } from "better-auth-studio/nuxt";
+import studioConfig from "~/studio.config";
+
+export default defineEventHandler(betterAuthStudio(studioConfig));
+```
+
+<Note>
+  Nuxt automatically imports `defineEventHandler` and h3 utilities.
+</Note>
+
+</Step>
+
+</Steps>
+
+### Adapter Implementation
+
+The Nuxt adapter works with Nuxt's h3 event handlers:
+
+```typescript src/adapters/nuxt.ts
+import { handleStudioRequest } from "../core/handler.js";
+import type { StudioConfig } from "../types/handler.js";
+
+export function betterAuthStudio(config: StudioConfig): (event: any) => Promise<Response | any> {
+  if (config.auth) {
+    injectLastSeenAtHooks(config.auth, config);
+    if (config.events?.enabled) injectEventHooks(config.auth, config.events);
+  }
+
+  return async (event: any) => {
+    try {
+      const universalReq = await convertNuxtToUniversal(event, config);
+      const universalRes = await handleStudioRequest(universalReq, config);
+      return universalToResponse(universalRes);
+    } catch (error: any) {
+      // Handle client disconnection gracefully
+      if (
+        error?.code === "EPIPE" ||
+        error?.code === "ECONNRESET" ||
+        error?.message?.includes("aborted")
+      ) {
+        return new Response(null, { status: 499 });
+      }
+
+      console.error("Studio handler error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  };
+}
+```
+
+---
+
+## Configuration Examples
+
+### With Access Control
+
+All frameworks support the same configuration options:
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  access: {
+    roles: ["admin", "moderator"],
+    allowEmails: ["admin@company.com"],
+  },
+  metadata: {
+    title: "Admin Dashboard",
+    theme: "dark",
+  },
+};
+
+export default config;
+```
+
+### With Event Tracking
+
+```typescript studio.config.ts
+import type { StudioConfig } from "better-auth-studio";
+import { auth } from "./lib/auth";
+
+const config: StudioConfig = {
+  auth,
+  basePath: "/api/studio",
+  events: {
+    enabled: true,
+    tableName: "auth_events",
+    include: ["sign-in", "sign-up", "password-reset"],
+  },
+  lastSeenAt: {
+    enabled: true,
+  },
+};
+
+export default config;
+```
+
+## Framework Comparison
+
+| Framework | Import Path | Route Type | Handler Type |
+|-----------|-------------|------------|-------------|
+| Next.js | `better-auth-studio/nextjs` | Catch-all API route | `(request: Request) => Response` |
+| Express | `better-auth-studio/express` | Express middleware | `Router` |
+| Hono | `better-auth-studio/hono` | Hono handler | `(c: Context) => Response` |
+| SvelteKit | `better-auth-studio/svelte-kit` | Server route | `(event: RequestEvent) => Response` |
+| Remix | `better-auth-studio/remix` | Resource route | `({ request }) => Response` |
+| Nuxt | `better-auth-studio/nuxt` | Server API route | `(event) => Response` |
+
+## Troubleshooting
+
+### Import Errors
+
+If you get import errors, ensure you're using the correct adapter path:
+
+```typescript
+// ✅ Correct
+import { betterAuthStudio } from "better-auth-studio/hono";
+
+// ❌ Wrong
+import { betterAuthStudio } from "better-auth-studio";
+```
+
+### TypeScript Errors
+
+For framework-specific TypeScript errors, install the framework's type definitions:
+
+```bash
+# SvelteKit
+npm install --save-dev @sveltejs/kit
+
+# Remix
+npm install --save-dev @remix-run/node
+
+# Nuxt
+npm install --save-dev nuxt
+```
+
+### Route Not Found
+
+Ensure the catch-all route pattern is correct for your framework:
+
+- **SvelteKit**: `[...path]/+server.ts`
+- **Remix**: `$.ts` (splat route)
+- **Nuxt**: `[...all].ts`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/self-hosting/configuration">
+    Learn about all configuration options
+  </Card>
+  <Card title="Next.js Setup" icon="react" href="/self-hosting/nextjs">
+    Set up with Next.js
+  </Card>
+</CardGroup>
